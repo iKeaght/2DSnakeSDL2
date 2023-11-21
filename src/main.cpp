@@ -1,6 +1,8 @@
 #include <SDL.h>
 #include <iostream>
-
+const int snakePartSize = 50;
+const int ScreenWidth = 1920;
+const int ScreenHeight = 1080;
 int main(int argc, char* args[]) {
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
@@ -8,8 +10,9 @@ int main(int argc, char* args[]) {
 
 	SDL_Init(SDL_INIT_EVERYTHING);
 	bool running = true;
-	SDL_Rect r{ 10,10,250,250 };
-	SDL_CreateWindowAndRenderer(1920, 1080, 0, &window, &renderer);
+	SDL_Rect r{ 10,10,snakePartSize,snakePartSize };
+	
+	SDL_CreateWindowAndRenderer(ScreenWidth, ScreenHeight, 0, &window, &renderer);
 
 	while (running) {
 		while (SDL_PollEvent(&e)) {
@@ -19,21 +22,17 @@ int main(int argc, char* args[]) {
 			else if (e.type == SDL_KEYDOWN) {
 				switch (e.key.keysym.sym) {
 				case SDLK_RIGHT:
-					std::cout << "Right key is pressed" << std::endl;
 					r.x += 50;
 					break;
 				case SDLK_LEFT:
-					std::cout << "Left key is pressed" << std::endl;
 					r.x -= 50;
 					break;
 
 				case SDLK_UP:
-					std::cout << "Up key is pressed" << std::endl;
 					r.y -= 50;
 					break;
 
 				case SDLK_DOWN:
-					std::cout << "Down key is pressed" << std::endl;
 					r.y += 50;
 					break;
 				}
@@ -53,7 +52,7 @@ int main(int argc, char* args[]) {
 		SDL_RenderFillRect(renderer, &r);
 
 		SDL_RenderPresent(renderer);
-		SDL_Delay(10);
+		//SDL_Delay(10);
 	}
 	return 0;
 }
