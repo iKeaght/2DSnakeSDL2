@@ -46,19 +46,34 @@ Boundaries boundaries;
 
 #pragma region Methods
 void Render(SDL_Renderer* renderer, const SDL_Rect& snakeRect, const SDL_Rect& fruitRect, SDL_Texture* snakeHeadTexture, SDL_Texture* snakeBodyTexture, SDL_Texture* snakeTailTexture, SDL_Texture* fruitTexture) {
-
+	int head_rotation = 0;
 	//Background
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
 	SDL_RenderClear(renderer);
 
 	//Fruit
 	SDL_RenderCopy(renderer, fruitTexture, NULL, &fruitRect);
-	
+
 
 	//Snake
-	SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &snakeRect);
-	SDL_Rect body = { snakeRect.x + 40, snakeRect.y, SnakePartSize, SnakePartSize };
-	SDL_Rect tail = { body.x + 40, body.y, SnakePartSize, SnakePartSize };
+	//SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &snakeRect);
+	switch (direction) {
+	case RIGHT:
+		head_rotation = -90;
+		break;
+	case LEFT:
+		head_rotation = 90;
+		break;
+	case UP:
+		head_rotation = 180;
+		break;
+	case DOWN:
+		head_rotation = 0;
+		break;
+	}
+	SDL_RenderCopyEx(renderer, snakeHeadTexture, NULL, &snakeRect, head_rotation, NULL, SDL_FLIP_NONE);
+	SDL_Rect body = { snakeRect.x + SnakePartSize, snakeRect.y, SnakePartSize, SnakePartSize };
+	SDL_Rect tail = { body.x + SnakePartSize, body.y, SnakePartSize, SnakePartSize };
 	SDL_RenderCopy(renderer, snakeBodyTexture, NULL, &body);
 	SDL_RenderCopy(renderer, snakeTailTexture, NULL, &tail);
 
@@ -176,7 +191,7 @@ int main(int argc, char* args[]) {
 	SDL_Texture* snakeTailTexture = nullptr;
 	SDL_Texture* appleTexture = nullptr;
 	SDL_Event e;
-	
+
 
 	SDL_Init(SDL_INIT_EVERYTHING);
 	IMG_Init(IMG_INIT_PNG);
@@ -201,7 +216,7 @@ int main(int argc, char* args[]) {
 			FruitUpdate(fruitRectangle, fruitPosition);
 			//ADD SCORE
 		}
-		
+
 		//Logic
 		HandleInputs(e, snakeRectangle);
 		MoveSnake(snakeRectangle, snakePosition);
