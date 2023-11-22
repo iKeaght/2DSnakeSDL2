@@ -1,7 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <iostream>
-
+#include <vector>
 #pragma region Variables
 const int ScreenWidth = 1920;
 const int ScreenHeight = 1080;
@@ -12,8 +12,16 @@ struct Vector2 {
 };
 //Snake
 const int SnakePartSize = 48;
-Vector2 snakePosition = { ScreenWidth - SnakePartSize,ScreenHeight - SnakePartSize };
-SDL_Rect snakeRectangle = { snakePosition.x, snakePosition.y, SnakePartSize, SnakePartSize };
+Vector2 snakeHeadPosition = { ScreenWidth - SnakePartSize,ScreenHeight - SnakePartSize };
+Vector2 snakeBodyPosition = { snakeHeadPosition.x + SnakePartSize ,snakeHeadPosition.y};
+Vector2 snakeTailPosition = { snakeBodyPosition.x + SnakePartSize ,snakeBodyPosition.y };
+
+SDL_Rect snakeHeadRectangle = { snakeHeadPosition.x, snakeHeadPosition.y, SnakePartSize, SnakePartSize };
+SDL_Rect snakeBodyRectangle = { snakeBodyPosition.x, snakeBodyPosition.y, SnakePartSize, SnakePartSize };
+SDL_Rect snakeTailectangle = { snakeTailPosition.x, snakeTailPosition.y, SnakePartSize, SnakePartSize };
+
+std::vector<SDL_Rect> snakeRects = { snakeHeadRectangle, snakeBodyRectangle, snakeTailectangle };
+std::vector<Vector2> snakePositions = { snakeHeadPosition, snakeBodyPosition, snakeTailPosition };
 
 //Fruit
 const int FruitSize = 48;
@@ -35,8 +43,10 @@ enum Direction
 struct Boundaries {
 	int xStart = SnakePartSize;
 	int yStart = SnakePartSize;
-	int xEnd = ScreenWidth - SnakePartSize;
-	int yEnd = ScreenHeight - SnakePartSize;
+	//int xEnd = ScreenWidth - SnakePartSize;
+	int xEnd = 2000;
+	int yEnd = 1200;
+	//int yEnd = ScreenHeight - SnakePartSize;
 };
 
 Direction direction;
@@ -45,7 +55,7 @@ Boundaries boundaries;
 
 
 #pragma region Methods
-void Render(SDL_Renderer* renderer, const SDL_Rect& snakeRect, const SDL_Rect& fruitRect, SDL_Texture* snakeHeadTexture, SDL_Texture* snakeBodyTexture, SDL_Texture* snakeTailTexture, SDL_Texture* fruitTexture) {
+void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, const SDL_Rect& fruitRect, SDL_Texture* snakeHeadTexture, SDL_Texture* snakeBodyTexture, SDL_Texture* snakeTailTexture, SDL_Texture* fruitTexture) {
 	int head_rotation = 0;
 	//Background
 	SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
@@ -56,7 +66,8 @@ void Render(SDL_Renderer* renderer, const SDL_Rect& snakeRect, const SDL_Rect& f
 
 
 	//Snake
-	//SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &snakeRect);
+	//SDL_Rect head = snakeRectangles[0];
+	//SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &head);
 	switch (direction) {
 	case RIGHT:
 		head_rotation = -90;
@@ -71,17 +82,19 @@ void Render(SDL_Renderer* renderer, const SDL_Rect& snakeRect, const SDL_Rect& f
 		head_rotation = 0;
 		break;
 	}
-	SDL_RenderCopyEx(renderer, snakeHeadTexture, NULL, &snakeRect, head_rotation, NULL, SDL_FLIP_NONE);
-	SDL_Rect body = { snakeRect.x + SnakePartSize, snakeRect.y, SnakePartSize, SnakePartSize };
-	SDL_Rect tail = { body.x + SnakePartSize, body.y, SnakePartSize, SnakePartSize };
-	SDL_RenderCopy(renderer, snakeBodyTexture, NULL, &body);
-	SDL_RenderCopy(renderer, snakeTailTexture, NULL, &tail);
+	SDL_Rect tailRect;
+	if (!snakeRects.empty()) {
+		tailRect = snakeRects.back();
+	}
+	SDL_RenderCopyEx(renderer, snakeHeadTexture, NULL, &snakeRectangles[0], head_rotation, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopy(renderer, snakeBodyTexture, NULL, &snakeRects[1]);
+	SDL_RenderCopy(renderer, snakeTailTexture, NULL, &tailRect);
 
 
 	SDL_RenderPresent(renderer);
 }
 
-void HandleInputs(SDL_Event& event, SDL_Rect& rect) {
+void HandleInputs(SDL_Event& event) {
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
 
@@ -108,36 +121,35 @@ void HandleInputs(SDL_Event& event, SDL_Rect& rect) {
 	}
 }
 
-void MoveSnake(SDL_Rect& rect, Vector2& snakePosition) {
+void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Vector2>& snakePositions) {
 	switch (direction) {
 	case RIGHT:
-		if (rect.x <= boundaries.xEnd) {
-			snakePosition.x += SnakePartSize;
-			rect.x += SnakePartSize;
+		if (snakeRects[0].x <= boundaries.xEnd) {
+			snakePositions[0].x += SnakePartSize;
+			snakeRects[0].x += SnakePartSize;
 		}
 		break;
 	case LEFT:
-		if (boundaries.xStart <= rect.x) {
-			snakePosition.x -= SnakePartSize;
-			rect.x -= SnakePartSize;
+		if (boundaries.xStart <= snakeRects[0].x) {
+			snakePositions[0].x -= SnakePartSize;
+			snakeRects[0].x -= SnakePartSize;
 		}
 		break;
 	case UP:
-		if (boundaries.yStart <= rect.y) {
-			snakePosition.y -= SnakePartSize;
-			rect.y -= SnakePartSize;
+		if (boundaries.yStart <= snakeRects[0].y) {
+			snakePositions[0].y -= SnakePartSize;
+			snakeRects[0].y -= SnakePartSize;
 		}
 		break;
 	case DOWN:
-		if (rect.y <= boundaries.yEnd) {
-			snakePosition.y += SnakePartSize;
-			rect.y += SnakePartSize;
+		if (snakeRects[0].y <= boundaries.yEnd) {
+			snakePositions[0].y += SnakePartSize;
+			snakeRects[0].y += SnakePartSize;
 		}
 		break;
 	default:
 		break;
 	}
-
 }
 
 int GetRandom(int min_value, int max_value, int step)
@@ -210,16 +222,16 @@ int main(int argc, char* args[]) {
 
 	while (running) {
 
-		Render(renderer, snakeRectangle, fruitRectangle, snakeHeadTexture, snakeBodyTexture, snakeTailTexture, appleTexture);
+		Render(renderer, snakeRects, fruitRectangle, snakeHeadTexture, snakeBodyTexture, snakeTailTexture, appleTexture);
 
-		if (Vector2Equal(fruitPosition, snakePosition, 40)) {
+		if (Vector2Equal(fruitPosition, snakePositions[0], 40)) {
 			FruitUpdate(fruitRectangle, fruitPosition);
 			//ADD SCORE
 		}
 
 		//Logic
-		HandleInputs(e, snakeRectangle);
-		MoveSnake(snakeRectangle, snakePosition);
+		HandleInputs(e);
+		MoveSnake(snakeRects, snakePositions);
 
 		SDL_Delay(75);
 	}
