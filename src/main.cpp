@@ -2,11 +2,27 @@
 #include <SDL_image.h>
 #include <iostream>
 
-const int SnakePartSize = 48;
-const int FruitSize = 48;
+#pragma region Variables
 const int ScreenWidth = 1920;
 const int ScreenHeight = 1080;
 const char* IMAGE_PATH = "./Images/";
+struct Vector2 {
+	int x;
+	int y;
+};
+//Snake
+const int SnakePartSize = 48;
+Vector2 snakePosition = { ScreenWidth - SnakePartSize,ScreenHeight - SnakePartSize };
+SDL_Rect snakeRectangle = { snakePosition.x, snakePosition.y, SnakePartSize, SnakePartSize };
+
+//Fruit
+const int FruitSize = 48;
+Vector2 fruitPosition = { ScreenWidth - SnakePartSize, ScreenHeight - SnakePartSize };
+SDL_Rect fruitRectangle{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
+
+//Game
+bool running = true;
+
 enum Direction
 {
 	STOP,
@@ -15,23 +31,36 @@ enum Direction
 	DOWN,
 	LEFT,
 };
-Direction direction;
+
 struct Boundaries {
 	int xStart = SnakePartSize;
 	int yStart = SnakePartSize;
 	int xEnd = ScreenWidth - SnakePartSize;
 	int yEnd = ScreenHeight - SnakePartSize;
 };
+
+Direction direction;
 Boundaries boundaries;
+#pragma endregion
 
-struct Vector2 {
-	int x;
-	int y;
-};
-bool running = true;
-const int xBoundaries = ScreenWidth - SnakePartSize;
-const int yBoundaries = ScreenHeight - SnakePartSize;
 
+#pragma region Methods
+void Render(SDL_Renderer* renderer, const SDL_Rect& snakeRect, const SDL_Rect& fruitRect, SDL_Texture* snakeHeadTexture, SDL_Texture* fruitTexture) {
+
+	//Background
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderClear(renderer);
+
+	//Fruit
+	SDL_SetRenderDrawColor(renderer, 204, 44, 36, 255);
+	SDL_RenderFillRect(renderer, &fruitRect);
+
+	//Snake
+	SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &snakeRect);
+
+
+	SDL_RenderPresent(renderer);
+}
 
 void HandleInputs(SDL_Event& event, SDL_Rect& rect) {
 	while (SDL_PollEvent(&event)) {
@@ -92,8 +121,23 @@ void MoveSnake(SDL_Rect& rect, Vector2& snakePosition) {
 
 }
 
+int GetRandom(int min_value, int max_value, int step)
+{
+	int random_value = (rand() % ((++max_value - min_value) / step)) * step + min_value;
+	return random_value;
+}
+
+void FruitUpdate(SDL_Rect& fruitRectangle, Vector2& fruitPosition) {
+	int xPosition = GetRandom(0, ScreenWidth, SnakePartSize);
+	int yPosition = GetRandom(0, ScreenHeight, SnakePartSize);
+	fruitRectangle.x = xPosition;
+	fruitRectangle.y = yPosition;
+	fruitPosition.x = xPosition;
+	fruitPosition.y = yPosition;
+}
+
 bool Vector2Equal(Vector2& vector1, Vector2 vector2, int step) {
-	if ((vector1.x - step <= vector2.x && vector2.x <= vector1.x + step )&& (vector1.y - step <= vector2.y && vector2.y <= vector1.y + step)) {
+	if ((vector1.x - step <= vector2.x && vector2.x <= vector1.x + step) && (vector1.y - step <= vector2.y && vector2.y <= vector1.y + step)) {
 		return true;
 	}
 	return false;
@@ -110,88 +154,42 @@ SDL_Surface* LoadImage(SDL_Surface* image, const char* imageName) {
 	return image;
 
 }
+#pragma endregion
 
-
-int GetRandom(int min_value, int max_value, int step)
-{
-	int random_value = (rand() % ((++max_value - min_value) / step)) * step + min_value;
-	return random_value;
-}
 
 
 int main(int argc, char* args[]) {
 
-	//Init
+
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 	SDL_Surface* snakeHead = nullptr;
 	SDL_Texture* snakeHeadTexture = nullptr;
 	SDL_Event e;
-	srand(time(0));
-	//Snake
-	Vector2 snakePosition = { ScreenWidth - SnakePartSize,ScreenHeight - SnakePartSize };
-	SDL_Rect snakeRectangle = { snakePosition.x, snakePosition.y, SnakePartSize, SnakePartSize };
-	SDL_Rect startPositionRect{ snakePosition.x, snakePosition.y, SnakePartSize, SnakePartSize };
-
-	//Fruit
-	Vector2 fruitPosition = { ScreenWidth - SnakePartSize, ScreenHeight - SnakePartSize };
-	SDL_Rect fruitRectangle{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
-	SDL_Rect fruitRectangleStart{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
-
+	
 
 	SDL_Init(SDL_INIT_EVERYTHING);
+	IMG_Init(IMG_INIT_PNG);
 
 	SDL_CreateWindowAndRenderer(ScreenWidth + 100, ScreenHeight + 100, 0, &window, &renderer);
-
-	IMG_Init(IMG_INIT_PNG);
+	srand(time(0));
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
 	snakeHeadTexture = SDL_CreateTextureFromSurface(renderer, snakeHead);
 
-	//Positionning
-
-	//fruits
-	SDL_SetRenderDrawColor(renderer, 204, 44, 36, 255);
-	SDL_RenderFillRect(renderer, &fruitRectangleStart);
-
-	//snake
-	SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &startPositionRect);
-
-
-	SDL_RenderPresent(renderer);
 
 	while (running) {
 
-		//background
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);
+		Render(renderer, snakeRectangle, fruitRectangle, snakeHeadTexture, NULL);
 
-		//fruits
-		std::cout << "Position : " << "fruitX: " << fruitPosition.x << "&&Snake X : " << snakePosition.x << "--" << "fruity: " << fruitPosition.y << "&&Snake y : " << snakePosition.y << std::endl;
 		if (Vector2Equal(fruitPosition, snakePosition, 40)) {
-			
-			int xPosition = GetRandom(0, ScreenWidth, SnakePartSize);
-			int yPosition = GetRandom(0, ScreenHeight, SnakePartSize);
-			fruitRectangle = {xPosition, yPosition, FruitSize, FruitSize };
-		
-			fruitPosition.x = xPosition;
-			fruitPosition.y = yPosition;
-
+			FruitUpdate(fruitRectangle, fruitPosition);
+			//ADD SCORE
 		}
-
-		//fruits
-		SDL_SetRenderDrawColor(renderer, 204, 44, 36, 255);
-		SDL_RenderFillRect(renderer, &fruitRectangle);
 		
-
-		//snake
-		SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &snakeRectangle);
-
 		//Logic
 		HandleInputs(e, snakeRectangle);
 		MoveSnake(snakeRectangle, snakePosition);
 
-		
-		SDL_RenderPresent(renderer);
 		SDL_Delay(100);
 	}
 	SDL_FreeSurface(snakeHead);
