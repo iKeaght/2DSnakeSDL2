@@ -45,18 +45,22 @@ Boundaries boundaries;
 
 
 #pragma region Methods
-void Render(SDL_Renderer* renderer, const SDL_Rect& snakeRect, const SDL_Rect& fruitRect, SDL_Texture* snakeHeadTexture, SDL_Texture* fruitTexture) {
+void Render(SDL_Renderer* renderer, const SDL_Rect& snakeRect, const SDL_Rect& fruitRect, SDL_Texture* snakeHeadTexture, SDL_Texture* snakeBodyTexture, SDL_Texture* snakeTailTexture, SDL_Texture* fruitTexture) {
 
 	//Background
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
 
 	//Fruit
-	SDL_SetRenderDrawColor(renderer, 204, 44, 36, 255);
-	SDL_RenderFillRect(renderer, &fruitRect);
+	SDL_RenderCopy(renderer, fruitTexture, NULL, &fruitRect);
+	
 
 	//Snake
 	SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &snakeRect);
+	SDL_Rect body = { snakeRect.x + 40, snakeRect.y, SnakePartSize, SnakePartSize };
+	SDL_Rect tail = { body.x + 40, body.y, SnakePartSize, SnakePartSize };
+	SDL_RenderCopy(renderer, snakeBodyTexture, NULL, &body);
+	SDL_RenderCopy(renderer, snakeTailTexture, NULL, &tail);
 
 
 	SDL_RenderPresent(renderer);
@@ -164,7 +168,13 @@ int main(int argc, char* args[]) {
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 	SDL_Surface* snakeHead = nullptr;
+	SDL_Surface* snakeBody = nullptr;
+	SDL_Surface* snakeTail = nullptr;
+	SDL_Surface* apple = nullptr;
 	SDL_Texture* snakeHeadTexture = nullptr;
+	SDL_Texture* snakeBodyTexture = nullptr;
+	SDL_Texture* snakeTailTexture = nullptr;
+	SDL_Texture* appleTexture = nullptr;
 	SDL_Event e;
 	
 
@@ -174,12 +184,18 @@ int main(int argc, char* args[]) {
 	SDL_CreateWindowAndRenderer(ScreenWidth + 100, ScreenHeight + 100, 0, &window, &renderer);
 	srand(time(0));
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
+	snakeBody = LoadImage(snakeBody, "SnakeBody.png");
+	snakeTail = LoadImage(snakeTail, "SnakeTail.png");
+	apple = LoadImage(apple, "Apple.png");
 	snakeHeadTexture = SDL_CreateTextureFromSurface(renderer, snakeHead);
+	snakeBodyTexture = SDL_CreateTextureFromSurface(renderer, snakeBody);
+	snakeTailTexture = SDL_CreateTextureFromSurface(renderer, snakeTail);
+	appleTexture = SDL_CreateTextureFromSurface(renderer, apple);
 
 
 	while (running) {
 
-		Render(renderer, snakeRectangle, fruitRectangle, snakeHeadTexture, NULL);
+		Render(renderer, snakeRectangle, fruitRectangle, snakeHeadTexture, snakeBodyTexture, snakeTailTexture, appleTexture);
 
 		if (Vector2Equal(fruitPosition, snakePosition, 40)) {
 			FruitUpdate(fruitRectangle, fruitPosition);
@@ -190,10 +206,12 @@ int main(int argc, char* args[]) {
 		HandleInputs(e, snakeRectangle);
 		MoveSnake(snakeRectangle, snakePosition);
 
-		SDL_Delay(100);
+		SDL_Delay(75);
 	}
 	SDL_FreeSurface(snakeHead);
+	SDL_FreeSurface(apple);
 	SDL_DestroyTexture(snakeHeadTexture);
+	SDL_DestroyTexture(appleTexture);
 	IMG_Quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
