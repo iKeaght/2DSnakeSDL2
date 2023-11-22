@@ -3,6 +3,7 @@
 #include <iostream>
 
 const int SnakePartSize = 48;
+const int FruitSize = 48;
 const int ScreenWidth = 1920;
 const int ScreenHeight = 1080;
 const char* IMAGE_PATH = "./Images/";
@@ -22,6 +23,11 @@ struct Boundaries {
 	int yEnd = ScreenHeight - SnakePartSize;
 };
 Boundaries boundaries;
+
+struct Vector2 {
+	int x;
+	int y;
+};
 bool running = true;
 const int xBoundaries = ScreenWidth - SnakePartSize;
 const int yBoundaries = ScreenHeight - SnakePartSize;
@@ -54,30 +60,30 @@ void HandleInputs(SDL_Event& event, SDL_Rect& rect) {
 	}
 }
 
-void MoveSnake(SDL_Rect& rect) {
+void MoveSnake(SDL_Rect& rect, Vector2& snakePosition) {
 	switch (direction) {
 	case RIGHT:
-		std::cout << "Right" << std::endl;
 		if (rect.x <= boundaries.xEnd) {
-			rect.x += 50;
+			snakePosition.x += SnakePartSize;
+			rect.x += SnakePartSize;
 		}
 		break;
 	case LEFT:
-		std::cout << "Left" << std::endl;
 		if (boundaries.xStart <= rect.x) {
-			rect.x -= 50;
+			snakePosition.x -= SnakePartSize;
+			rect.x -= SnakePartSize;
 		}
 		break;
 	case UP:
-		std::cout << "Up" << std::endl;
 		if (boundaries.yStart <= rect.y) {
-			rect.y -= 50;
+			snakePosition.y -= SnakePartSize;
+			rect.y -= SnakePartSize;
 		}
 		break;
 	case DOWN:
-		std::cout << "Down" << std::endl;
 		if (rect.y <= boundaries.yEnd) {
-			rect.y += 50;
+			snakePosition.y += SnakePartSize;
+			rect.y += SnakePartSize;
 		}
 		break;
 	default:
@@ -97,13 +103,40 @@ SDL_Surface* LoadImage(SDL_Surface* image, const char* imageName) {
 	return image;
 
 }
+
+bool operator==(const Vector2& struct1, const Vector2& struct2)
+{
+	if (struct1.x == struct2.x && struct1.y == struct2.y) {
+		return true;
+	}
+	return false;
+}
+int GetRandom(int min_value, int max_value, int step)
+{
+	int random_value = (rand() % ((++max_value - min_value) / step)) * step + min_value;
+	return random_value;
+}
+
+
 int main(int argc, char* args[]) {
+
+	//Init
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 	SDL_Surface* snakeHead = nullptr;
 	SDL_Texture* snakeHeadTexture = nullptr;
 	SDL_Event e;
-	SDL_Rect startPositionRect{ 1920 - 50,1080 - 50,SnakePartSize,SnakePartSize };
+	srand(time(0));
+	//Snake
+	Vector2 snakePosition = { 1920 - SnakePartSize,1080 - SnakePartSize };
+	SDL_Rect snakeRectangle = { snakePosition.x, snakePosition.y, SnakePartSize, SnakePartSize };
+	SDL_Rect startPositionRect{ snakePosition.x, snakePosition.y, SnakePartSize, SnakePartSize };
+
+	//Fruit
+	Vector2 fruitPosition = { 1920 - SnakePartSize, 1080 - SnakePartSize };
+	SDL_Rect fruitRectangle{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
+	SDL_Rect fruitRectangleStart{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
+
 
 	SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -113,17 +146,58 @@ int main(int argc, char* args[]) {
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
 	snakeHeadTexture = SDL_CreateTextureFromSurface(renderer, snakeHead);
 
+	//Positionning
+
+	//fruits
+	SDL_SetRenderDrawColor(renderer, 204, 44, 36, 255);
+	SDL_RenderFillRect(renderer, &fruitRectangleStart);
+
+	//snake
+	SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &startPositionRect);
+
+
+	SDL_RenderPresent(renderer);
+
 	while (running) {
+
+		//background
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderClear(renderer);
 
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-		SDL_RenderFillRect(renderer, &startPositionRect);
+		//fruits
 
+		if (fruitPosition.x  == snakePosition.x && fruitPosition.y == snakePosition.y) {
+			std::cout << "same position" << std::endl;
+			std::cout << "draw : " << fruitRectangle.x << "--" << fruitRectangle.y << std::endl;
+			std::cout << "draw 2 : " << snakePosition.x << "--" << snakePosition.y << std::endl;
+			int xPosition = GetRandom(0, ScreenWidth, SnakePartSize);
+			int yPosition = GetRandom(0, ScreenHeight, SnakePartSize);
+			std::cout << "Random : " << xPosition << "-" << yPosition << std::endl;
+			fruitRectangle = {xPosition, yPosition, FruitSize, FruitSize };
+			std::cout << fruitRectangle.x << "--" << fruitRectangle.y << std::endl;
+			/*SDL_SetRenderDrawColor(renderer, 204, 44, 36, 255);
+			SDL_RenderFillRect(renderer, &fruitRectangle);*/
+			fruitPosition.x = xPosition;
+			fruitPosition.y = yPosition;
+			std::cout << "Changed fruit position : " << fruitPosition.x << "--" << fruitPosition.y << std::endl;
+
+		}
+
+		//fruits
+		SDL_SetRenderDrawColor(renderer, 204, 44, 36, 255);
+		SDL_RenderFillRect(renderer, &fruitRectangle);
+		//std::cout << "draw : " << fruitRectangle.x << "--" << fruitRectangle.y << std::endl;
+		//std::cout << "draw 2 : " << snakePosition.x << "--" << snakePosition.y << std::endl;
+
+		//snake
 		SDL_RenderCopy(renderer, snakeHeadTexture, NULL, &startPositionRect);
+
 		SDL_RenderPresent(renderer);
+		//Logic
 		HandleInputs(e, startPositionRect);
-		MoveSnake(startPositionRect);
+		MoveSnake(startPositionRect, snakePosition);
+
+
 		SDL_Delay(100);
 	}
 	SDL_FreeSurface(snakeHead);
