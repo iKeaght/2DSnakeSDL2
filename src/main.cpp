@@ -12,8 +12,16 @@ struct Transform {
 	int y;
 	int rotation;
 };
+struct Boundaries {
+	int xStart = 48;
+	int yStart = 48;
+	int xEnd = 1440;
+	int yEnd = 960;
+};
+Boundaries boundaries;
+
 //Snake
-Transform snakeHeadTransform = { SCREENWIDTH - SNAKEPARTSIZE,SCREENHEIGHT - SNAKEPARTSIZE, 0 };
+Transform snakeHeadTransform = { boundaries.xEnd - 300,boundaries.yEnd - 300, 0 };
 Transform snakeBodyTransform = { snakeHeadTransform.x + SNAKEPARTSIZE , snakeHeadTransform.y, 90 };
 Transform snakeTailTransform = { snakeBodyTransform.x + SNAKEPARTSIZE , snakeBodyTransform.y, 90 };
 
@@ -23,11 +31,22 @@ SDL_Rect snakeTailectangle = { snakeTailTransform.x, snakeTailTransform.y, SNAKE
 
 std::vector<SDL_Rect> snakeRects = { snakeHeadRectangle, snakeBodyRectangle, snakeTailectangle };
 std::vector<Transform> snakeTransforms = { snakeHeadTransform, snakeBodyTransform, snakeTailTransform };
+//When collisions, remove element, to optimisation + return when found
+
+
+SDL_Surface* snakeHead = nullptr;
+SDL_Surface* snakeBody = nullptr;
+SDL_Surface* snakeTail = nullptr;
+SDL_Texture* snakeHeadTexture = nullptr;
+SDL_Texture* snakeBodyTexture = nullptr;
+SDL_Texture* snakeTailTexture = nullptr;
 
 //Fruit
 const int FruitSize = 48;
-Transform fruitPosition = { SCREENWIDTH - SNAKEPARTSIZE, SCREENHEIGHT - SNAKEPARTSIZE };
-SDL_Rect fruitRectangle{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
+Transform fruitPosition = { boundaries.xEnd - 300, boundaries.yEnd - 222 };
+SDL_Rect fruitRects{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
+SDL_Surface* apple = nullptr;
+SDL_Texture* fruitTexture = nullptr;
 
 //Game
 bool running = true;
@@ -41,24 +60,41 @@ enum Direction
 	LEFT,
 };
 
-struct Boundaries {
-	int xStart = SNAKEPARTSIZE;
-	int yStart = SNAKEPARTSIZE;
-	int xEnd = SCREENWIDTH - SNAKEPARTSIZE;
-	int yEnd = SCREENHEIGHT - SNAKEPARTSIZE;
-};
+
 
 Direction direction;
-Boundaries boundaries;
 #pragma endregion
 
 
 #pragma region Methods
-void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, const SDL_Rect& fruitRect, SDL_Texture* snakeHeadTexture, SDL_Texture* snakeBodyTexture, SDL_Texture* snakeTailTexture, SDL_Texture* fruitTexture) {
+void DrawBorder(SDL_Renderer* renderer) {
+	SDL_Rect rectangle;
+	SDL_Rect rectangle2;
+
+	for (int x = boundaries.xStart; x <= boundaries.xEnd; x += SNAKEPARTSIZE) {
+		rectangle = { x, boundaries.yStart, SNAKEPARTSIZE, SNAKEPARTSIZE };
+		rectangle2 = { x, boundaries.yEnd, SNAKEPARTSIZE, SNAKEPARTSIZE };
+		SDL_SetRenderDrawColor(renderer, 89, 120, 44, 255);
+		SDL_RenderFillRect(renderer, &rectangle);
+		SDL_RenderFillRect(renderer, &rectangle2);
+	}
+
+	for (int y = boundaries.yStart; y <= boundaries.yEnd; y += SNAKEPARTSIZE) {
+		rectangle = { boundaries.xStart, y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+		rectangle2 = { boundaries.xEnd, y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+		SDL_SetRenderDrawColor(renderer, 89, 120, 44, 255);
+		SDL_RenderFillRect(renderer, &rectangle);
+		SDL_RenderFillRect(renderer, &rectangle2);
+	}
+}
+void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_Rect& fruitRect) {
 	int indexTail = snakeTransforms.size() - 1;
 	//Background
 	SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
 	SDL_RenderClear(renderer);
+	DrawBorder(renderer);
+
+
 
 	//Fruit
 	SDL_RenderCopy(renderer, fruitTexture, NULL, &fruitRect);
@@ -159,16 +195,15 @@ int GetRandom(int min_value, int max_value, int step)
 }
 
 void FruitUpdate(SDL_Rect& fruitRectangle, Transform& fruitPosition) {
-	int xPosition = GetRandom(0, SCREENWIDTH, SNAKEPARTSIZE);
-	int yPosition = GetRandom(0, SCREENHEIGHT, SNAKEPARTSIZE);
+	int xPosition = GetRandom(boundaries.xStart + SNAKEPARTSIZE, boundaries.xEnd-SNAKEPARTSIZE, SNAKEPARTSIZE);
+	int yPosition = GetRandom(boundaries.yStart + SNAKEPARTSIZE, boundaries.yEnd - SNAKEPARTSIZE, SNAKEPARTSIZE);
 	fruitRectangle.x = xPosition;
 	fruitRectangle.y = yPosition;
 	fruitPosition.x = xPosition;
 	fruitPosition.y = yPosition;
 }
 void AddSnakeBody(std::vector<SDL_Rect>& snakeRectangles, std::vector<Transform>& snakeTransforms) {
-	//int indexTail = snakeTransforms.size() - 1;
-	Transform newTransform{  snakeHeadTransform.x + SNAKEPARTSIZE , snakeHeadTransform.y, 90 }; 
+	Transform newTransform{ snakeHeadTransform.x + SNAKEPARTSIZE , snakeHeadTransform.y, 90 };
 	snakeTransforms.push_back(newTransform);
 	SDL_Rect newRectangle = { newTransform.x, newTransform.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
 	snakeRectangles.push_back(newRectangle);
@@ -202,21 +237,15 @@ int main(int argc, char* args[]) {
 
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
-	SDL_Surface* snakeHead = nullptr;
-	SDL_Surface* snakeBody = nullptr;
-	SDL_Surface* snakeTail = nullptr;
-	SDL_Surface* apple = nullptr;
-	SDL_Texture* snakeHeadTexture = nullptr;
-	SDL_Texture* snakeBodyTexture = nullptr;
-	SDL_Texture* snakeTailTexture = nullptr;
-	SDL_Texture* appleTexture = nullptr;
 	SDL_Event e;
 
-
+	//Init
 	SDL_Init(SDL_INIT_EVERYTHING);
 	IMG_Init(IMG_INIT_PNG);
 
-	SDL_CreateWindowAndRenderer(SCREENWIDTH + 100, SCREENHEIGHT + 100, 0, &window, &renderer);
+	//Initialize window and renderer
+	SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, 0, &window, &renderer);
+
 	srand(time(0));
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
 	snakeBody = LoadImage(snakeBody, "SnakeBody.png");
@@ -225,15 +254,14 @@ int main(int argc, char* args[]) {
 	snakeHeadTexture = SDL_CreateTextureFromSurface(renderer, snakeHead);
 	snakeBodyTexture = SDL_CreateTextureFromSurface(renderer, snakeBody);
 	snakeTailTexture = SDL_CreateTextureFromSurface(renderer, snakeTail);
-	appleTexture = SDL_CreateTextureFromSurface(renderer, apple);
-
+	fruitTexture = SDL_CreateTextureFromSurface(renderer, apple);
 
 	while (running) {
 
-		Render(renderer, snakeRects, fruitRectangle, snakeHeadTexture, snakeBodyTexture, snakeTailTexture, appleTexture);
+		Render(renderer, snakeRects, fruitRects);
 
 		if (TransformEqual(fruitPosition, snakeTransforms[0], 40)) {
-			FruitUpdate(fruitRectangle, fruitPosition);
+			FruitUpdate(fruitRects, fruitPosition);
 			AddSnakeBody(snakeRects, snakeTransforms);
 			//ADD SCORE
 		}
@@ -247,7 +275,7 @@ int main(int argc, char* args[]) {
 	SDL_FreeSurface(snakeHead);
 	SDL_FreeSurface(apple);
 	SDL_DestroyTexture(snakeHeadTexture);
-	SDL_DestroyTexture(appleTexture);
+	SDL_DestroyTexture(fruitTexture);
 	IMG_Quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
