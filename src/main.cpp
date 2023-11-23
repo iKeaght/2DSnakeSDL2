@@ -142,16 +142,18 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 	Transform currentTransform{ snakeTranforms[0].x, snakeTranforms[0].y, snakeTranforms[0].rotation - 90 };
 	Transform nextTransform{ snakeTranforms[0].x, snakeTranforms[0].y, snakeTranforms[0].rotation - 90 };
 
+	int offsetEnd = boundaries.xStart + SNAKEPARTSIZE;
+	int offsetStart = boundaries.xStart + 35;
 	switch (direction) {
 	case RIGHT:
-		if (snakeRects[0].x <= boundaries.xEnd) {
+		if (snakeRects[0].x <= boundaries.xEnd - offsetEnd){
 			snakeTranforms[0].x += SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = -90;
 			snakeRects[0].x += SNAKEPARTSIZE;
 		}
 		break;
 	case LEFT:
-		if (boundaries.xStart <= snakeRects[0].x) {
+		if (boundaries.xStart + offsetStart <= snakeRects[0].x) {
 			snakeTranforms[0].x -= SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 90;
 
@@ -159,14 +161,14 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 		}
 		break;
 	case UP:
-		if (boundaries.yStart <= snakeRects[0].y) {
+		if (boundaries.yStart + offsetStart <= snakeRects[0].y) {
 			snakeTranforms[0].y -= SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 180;
 			snakeRects[0].y -= SNAKEPARTSIZE;
 		}
 		break;
 	case DOWN:
-		if (snakeRects[0].y <= boundaries.yEnd) {
+		if (snakeRects[0].y <= boundaries.yEnd - offsetEnd) {
 			snakeTranforms[0].y += SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 0;
 			snakeRects[0].y += SNAKEPARTSIZE;
