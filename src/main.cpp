@@ -3,29 +3,29 @@
 #include <iostream>
 #include <vector>
 #pragma region Variables
-const int ScreenWidth = 1920;
-const int ScreenHeight = 1080;
+const int SCREENWIDTH = 1920;
+const int SCREENHEIGHT = 1080;
 const char* IMAGE_PATH = "./Images/";
+const int SNAKEPARTSIZE = 48;
 struct Vector2 {
 	int x;
 	int y;
 };
 //Snake
-const int SnakePartSize = 48;
-Vector2 snakeHeadPosition = { ScreenWidth - SnakePartSize,ScreenHeight - SnakePartSize };
-Vector2 snakeBodyPosition = { snakeHeadPosition.x + SnakePartSize ,snakeHeadPosition.y};
-Vector2 snakeTailPosition = { snakeBodyPosition.x + SnakePartSize ,snakeBodyPosition.y };
+Vector2 snakeHeadPosition = { SCREENWIDTH - SNAKEPARTSIZE,SCREENHEIGHT - SNAKEPARTSIZE };
+Vector2 snakeBodyPosition = { snakeHeadPosition.x + SNAKEPARTSIZE ,snakeHeadPosition.y };
+Vector2 snakeTailPosition = { snakeBodyPosition.x + SNAKEPARTSIZE ,snakeBodyPosition.y };
 
-SDL_Rect snakeHeadRectangle = { snakeHeadPosition.x, snakeHeadPosition.y, SnakePartSize, SnakePartSize };
-SDL_Rect snakeBodyRectangle = { snakeBodyPosition.x, snakeBodyPosition.y, SnakePartSize, SnakePartSize };
-SDL_Rect snakeTailectangle = { snakeTailPosition.x, snakeTailPosition.y, SnakePartSize, SnakePartSize };
+SDL_Rect snakeHeadRectangle = { snakeHeadPosition.x, snakeHeadPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+SDL_Rect snakeBodyRectangle = { snakeBodyPosition.x, snakeBodyPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+SDL_Rect snakeTailectangle = { snakeTailPosition.x, snakeTailPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
 
 std::vector<SDL_Rect> snakeRects = { snakeHeadRectangle, snakeBodyRectangle, snakeTailectangle };
 std::vector<Vector2> snakePositions = { snakeHeadPosition, snakeBodyPosition, snakeTailPosition };
 
 //Fruit
 const int FruitSize = 48;
-Vector2 fruitPosition = { ScreenWidth - SnakePartSize, ScreenHeight - SnakePartSize };
+Vector2 fruitPosition = { SCREENWIDTH - SNAKEPARTSIZE, SCREENHEIGHT - SNAKEPARTSIZE };
 SDL_Rect fruitRectangle{ fruitPosition.x, fruitPosition.y, FruitSize, FruitSize };
 
 //Game
@@ -41,12 +41,12 @@ enum Direction
 };
 
 struct Boundaries {
-	int xStart = SnakePartSize;
-	int yStart = SnakePartSize;
-	//int xEnd = ScreenWidth - SnakePartSize;
-	int xEnd = 2000;
-	int yEnd = 1200;
-	//int yEnd = ScreenHeight - SnakePartSize;
+	int xStart = SNAKEPARTSIZE;
+	int yStart = SNAKEPARTSIZE;
+	//int xEnd = SCREENWIDTH - SNAKEPARTSIZE;
+	int xEnd = SCREENWIDTH - SNAKEPARTSIZE;
+	int yEnd = SCREENHEIGHT - SNAKEPARTSIZE;
+	//int yEnd = SCREENHEIGHT - SNAKEPARTSIZE;
 };
 
 Direction direction;
@@ -87,6 +87,7 @@ void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, cons
 		tailRect = snakeRects.back();
 	}
 	SDL_RenderCopyEx(renderer, snakeHeadTexture, NULL, &snakeRectangles[0], head_rotation, NULL, SDL_FLIP_NONE);
+	//TODO : les parties du corps nesuvient pas la tete( avec un for et position -1).. + faire les rotations des parties du corps avec un foreach
 	SDL_RenderCopy(renderer, snakeBodyTexture, NULL, &snakeRects[1]);
 	SDL_RenderCopy(renderer, snakeTailTexture, NULL, &tailRect);
 
@@ -121,30 +122,82 @@ void HandleInputs(SDL_Event& event) {
 	}
 }
 
+void SetSnakePosition(std::vector<SDL_Rect>& snakeRects, std::vector<Vector2>& snakePositions, Direction dir) {
+	Vector2 currentPosition{ snakePositions[0].x, snakePositions[0].y };
+	Vector2 nextPosition{ snakePositions[0].x, snakePositions[0].y };
+	switch (dir) {
+	case RIGHT:
+		snakePositions[0].x += SNAKEPARTSIZE;
+		snakeRects[0].x += SNAKEPARTSIZE;
+		if (snakeRects.size() == snakePositions.size()) {
+			for (int i = 1; i < snakePositions.size(); i++) {
+				currentPosition = { snakePositions[i].x, snakePositions[i].y };
+				snakePositions[i] = { nextPosition.x, nextPosition.y };
+				snakeRects[i] = { nextPosition.x, nextPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+				nextPosition = { currentPosition.x, currentPosition.y };
+			}
+		}
+		break;
+	case LEFT:
+		snakePositions[0].x -= SNAKEPARTSIZE;
+		snakeRects[0].x -= SNAKEPARTSIZE;
+		if (snakeRects.size() == snakePositions.size()) {
+			for (int i = 1; i < snakePositions.size(); i++) {
+				currentPosition = { snakePositions[i].x, snakePositions[i].y };
+				snakePositions[i] = { nextPosition.x, nextPosition.y };
+				snakeRects[i] = { nextPosition.x, nextPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+				nextPosition = { currentPosition.x, currentPosition.y };
+			}
+		}
+		break;
+	case UP:
+		snakePositions[0].y -= SNAKEPARTSIZE;
+		snakeRects[0].y -= SNAKEPARTSIZE;
+		if (snakeRects.size() == snakePositions.size()) {
+			for (int i = 1; i < snakePositions.size(); i++) {
+				currentPosition = { snakePositions[i].x, snakePositions[i].y };
+				snakePositions[i] = { nextPosition.x, nextPosition.y };
+				snakeRects[i] = { nextPosition.x, nextPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+				nextPosition = { currentPosition.x, currentPosition.y };
+			}
+		}
+		break;
+	case DOWN:
+		snakePositions[0].y += SNAKEPARTSIZE;
+		snakeRects[0].y += SNAKEPARTSIZE;
+		if (snakeRects.size() == snakePositions.size()) {
+			for (int i = 1; i < snakePositions.size(); i++) {
+				currentPosition = { snakePositions[i].x, snakePositions[i].y };
+				snakePositions[i] = { nextPosition.x, nextPosition.y };
+				snakeRects[i] = { nextPosition.x, nextPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+				nextPosition = { currentPosition.x, currentPosition.y };
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
 void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Vector2>& snakePositions) {
 	switch (direction) {
 	case RIGHT:
 		if (snakeRects[0].x <= boundaries.xEnd) {
-			snakePositions[0].x += SnakePartSize;
-			snakeRects[0].x += SnakePartSize;
+			SetSnakePosition(snakeRects, snakePositions, RIGHT);
 		}
 		break;
 	case LEFT:
 		if (boundaries.xStart <= snakeRects[0].x) {
-			snakePositions[0].x -= SnakePartSize;
-			snakeRects[0].x -= SnakePartSize;
+			SetSnakePosition(snakeRects, snakePositions, LEFT);
 		}
 		break;
 	case UP:
 		if (boundaries.yStart <= snakeRects[0].y) {
-			snakePositions[0].y -= SnakePartSize;
-			snakeRects[0].y -= SnakePartSize;
+			SetSnakePosition(snakeRects, snakePositions, UP);
 		}
 		break;
 	case DOWN:
 		if (snakeRects[0].y <= boundaries.yEnd) {
-			snakePositions[0].y += SnakePartSize;
-			snakeRects[0].y += SnakePartSize;
+			SetSnakePosition(snakeRects, snakePositions, DOWN);
 		}
 		break;
 	default:
@@ -159,8 +212,8 @@ int GetRandom(int min_value, int max_value, int step)
 }
 
 void FruitUpdate(SDL_Rect& fruitRectangle, Vector2& fruitPosition) {
-	int xPosition = GetRandom(0, ScreenWidth, SnakePartSize);
-	int yPosition = GetRandom(0, ScreenHeight, SnakePartSize);
+	int xPosition = GetRandom(0, SCREENWIDTH, SNAKEPARTSIZE);
+	int yPosition = GetRandom(0, SCREENHEIGHT, SNAKEPARTSIZE);
 	fruitRectangle.x = xPosition;
 	fruitRectangle.y = yPosition;
 	fruitPosition.x = xPosition;
@@ -208,7 +261,7 @@ int main(int argc, char* args[]) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	IMG_Init(IMG_INIT_PNG);
 
-	SDL_CreateWindowAndRenderer(ScreenWidth + 100, ScreenHeight + 100, 0, &window, &renderer);
+	SDL_CreateWindowAndRenderer(SCREENWIDTH + 100, SCREENHEIGHT + 100, 0, &window, &renderer);
 	srand(time(0));
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
 	snakeBody = LoadImage(snakeBody, "SnakeBody.png");
