@@ -43,10 +43,8 @@ enum Direction
 struct Boundaries {
 	int xStart = SNAKEPARTSIZE;
 	int yStart = SNAKEPARTSIZE;
-	//int xEnd = SCREENWIDTH - SNAKEPARTSIZE;
 	int xEnd = SCREENWIDTH - SNAKEPARTSIZE;
 	int yEnd = SCREENHEIGHT - SNAKEPARTSIZE;
-	//int yEnd = SCREENHEIGHT - SNAKEPARTSIZE;
 };
 
 Direction direction;
@@ -122,64 +120,51 @@ void HandleInputs(SDL_Event& event) {
 	}
 }
 
-void SetSnakePositions(std::vector<SDL_Rect>& snakeRects, std::vector<Vector2>& snakePositions, Direction direction) {
+void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Vector2>& snakePositions) {
+
 	Vector2 currentPosition{ snakePositions[0].x, snakePositions[0].y };
 	Vector2 nextPosition{ snakePositions[0].x, snakePositions[0].y };
 
 	switch (direction) {
 	case RIGHT:
-		snakePositions[0].x += SNAKEPARTSIZE;
-		snakeRects[0].x += SNAKEPARTSIZE;
+		if (snakeRects[0].x <= boundaries.xEnd) {
+			snakePositions[0].x += SNAKEPARTSIZE;
+			snakeRects[0].x += SNAKEPARTSIZE;
+		}
 		break;
 	case LEFT:
-		snakePositions[0].x -= SNAKEPARTSIZE;
-		snakeRects[0].x -= SNAKEPARTSIZE;
+		if (boundaries.xStart <= snakeRects[0].x) {
+
+			snakePositions[0].x -= SNAKEPARTSIZE;
+			snakeRects[0].x -= SNAKEPARTSIZE;
+		}
 		break;
 	case UP:
-		snakePositions[0].y -= SNAKEPARTSIZE;
-		snakeRects[0].y -= SNAKEPARTSIZE;
+		if (boundaries.yStart <= snakeRects[0].y) {
+			snakePositions[0].y -= SNAKEPARTSIZE;
+			snakeRects[0].y -= SNAKEPARTSIZE;
+		}
 		break;
 	case DOWN:
-		snakePositions[0].y += SNAKEPARTSIZE;
-		snakeRects[0].y += SNAKEPARTSIZE;
+		if (snakeRects[0].y <= boundaries.yEnd) {
+			snakePositions[0].y += SNAKEPARTSIZE;
+			snakeRects[0].y += SNAKEPARTSIZE;
+		}
 		break;
 	default:
 		break;
 	}
 	if (snakeRects.size() == snakePositions.size()) {
 		for (int i = 1; i < snakePositions.size(); i++) {
-			currentPosition = { snakePositions[i].x, snakePositions[i].y };
-			snakePositions[i] = { nextPosition.x, nextPosition.y };
-			snakeRects[i] = { nextPosition.x, nextPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
-			nextPosition = { currentPosition.x, currentPosition.y };
+			if ((snakeRects[0].x <= boundaries.xEnd + (SNAKEPARTSIZE * i)) && (boundaries.xStart <= snakeRects[0].x + (SNAKEPARTSIZE * i)) && ( boundaries.yStart <= snakeRects[0].y + (SNAKEPARTSIZE * i)) && (snakeRects[0].y <= boundaries.yEnd + (SNAKEPARTSIZE * i))) {
+				currentPosition = { snakePositions[i].x, snakePositions[i].y };
+				snakePositions[i] = { nextPosition.x, nextPosition.y };
+				snakeRects[i] = { nextPosition.x, nextPosition.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+				nextPosition = { currentPosition.x, currentPosition.y };
+			}
 		}
 	}
-}
-void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Vector2>& snakePositions) {
-	switch (direction) {
-	case RIGHT:
-		if (snakeRects[0].x <= boundaries.xEnd) {
-			SetSnakePositions(snakeRects, snakePositions, RIGHT);
-		}
-		break;
-	case LEFT:
-		if (boundaries.xStart <= snakeRects[0].x) {
-			SetSnakePositions(snakeRects, snakePositions, LEFT);
-		}
-		break;
-	case UP:
-		if (boundaries.yStart <= snakeRects[0].y) {
-			SetSnakePositions(snakeRects, snakePositions, UP);
-		}
-		break;
-	case DOWN:
-		if (snakeRects[0].y <= boundaries.yEnd) {
-			SetSnakePositions(snakeRects, snakePositions, DOWN);
-		}
-		break;
-	default:
-		break;
-	}
+
 }
 
 int GetRandom(int min_value, int max_value, int step)
