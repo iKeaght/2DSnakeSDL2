@@ -33,7 +33,6 @@ SDL_Rect snakeTailectangle = { snakeTailTransform.x, snakeTailTransform.y, SNAKE
 
 std::vector<SDL_Rect> snakeRects = { snakeHeadRectangle, snakeBodyRectangle, snakeTailectangle };
 std::vector<Transform> snakeTransforms = { snakeHeadTransform, snakeBodyTransform, snakeTailTransform };
-//When collisions, remove element, to optimisation + return when found
 
 
 SDL_Surface* snakeHead = nullptr;
@@ -127,18 +126,22 @@ void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_
 }
 
 bool CollisionsChecks(std::vector<Transform> snakeTransforms) {
+
+	//Check snake collisions with itself
 	for (int i = 0; i < snakeTransforms.size(); i++) {
 		for (int j = i + 1; j < snakeTransforms.size() - i; j++) {
 			if (snakeTransforms[i].x == snakeTransforms[j].x && snakeTransforms[i].y == snakeTransforms[j].y) {
-				//hit
-				std::cout << "hit" << std::endl;
+				
 				snakeTransforms.erase(snakeTransforms.begin());
 				return true;
 			}
 		}
 	}
-	//not hit
-	std::cout << "not hited" << std::endl;
+	
+	//Check snake collisions with walls
+	if (snakeTransforms[0].x <= boundaries.xStart+20 || snakeTransforms[0].x >= boundaries.xEnd- 20 || snakeTransforms[0].y <= boundaries.yStart + 20 || snakeTransforms[0].y >= boundaries.yEnd - 20) {
+		return true;
+	}
 	return false;
 }
 void HandleInputs(SDL_Event& event) {
@@ -173,18 +176,17 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 	Transform currentTransform{ snakeTranforms[0].x, snakeTranforms[0].y, snakeTranforms[0].rotation - 90 };
 	Transform nextTransform{ snakeTranforms[0].x, snakeTranforms[0].y, snakeTranforms[0].rotation - 90 };
 
-	int offsetEnd = boundaries.xStart + SNAKEPARTSIZE;
-	int offsetStart = boundaries.xStart + 35;
+
 	switch (direction) {
 	case RIGHT:
-		if (snakeRects[0].x <= boundaries.xEnd - offsetEnd) {
+		if (snakeRects[0].x <= boundaries.xEnd) {
 			snakeTranforms[0].x += SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = -90;
 			snakeRects[0].x += SNAKEPARTSIZE;
 		}
 		break;
 	case LEFT:
-		if (boundaries.xStart + offsetStart <= snakeRects[0].x) {
+		if (boundaries.xStart <= snakeRects[0].x) {
 			snakeTranforms[0].x -= SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 90;
 
@@ -192,14 +194,14 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 		}
 		break;
 	case UP:
-		if (boundaries.yStart + offsetStart <= snakeRects[0].y) {
+		if (boundaries.yStart<= snakeRects[0].y) {
 			snakeTranforms[0].y -= SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 180;
 			snakeRects[0].y -= SNAKEPARTSIZE;
 		}
 		break;
 	case DOWN:
-		if (snakeRects[0].y <= boundaries.yEnd - offsetEnd) {
+		if (snakeRects[0].y <= boundaries.yEnd) {
 			snakeTranforms[0].y += SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 0;
 			snakeRects[0].y += SNAKEPARTSIZE;
@@ -210,12 +212,10 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 	}
 	if (snakeRects.size() == snakeTranforms.size()) {
 		for (int i = 1; i < snakeTranforms.size(); i++) {
-			//if ((snakeRects[0].x <= boundaries.xEnd + (SNAKEPARTSIZE * i)) && (boundaries.xStart <= snakeRects[0].x + (SNAKEPARTSIZE * i)) && ( boundaries.yStart <= snakeRects[0].y + (SNAKEPARTSIZE * i)) && (snakeRects[0].y <= boundaries.yEnd + (SNAKEPARTSIZE * i))) {
 			currentTransform = { snakeTranforms[i].x, snakeTranforms[i].y, snakeTranforms[i].rotation };
 			snakeTranforms[i] = { nextTransform.x, nextTransform.y, nextTransform.rotation };
 			snakeRects[i] = { nextTransform.x, nextTransform.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
 			nextTransform = { currentTransform.x, currentTransform.y, currentTransform.rotation };
-			//}
 		}
 	}
 
@@ -308,7 +308,10 @@ int main(int argc, char* args[]) {
 		//Logic
 		HandleInputs(e);
 		MoveSnake(snakeRects, snakeTransforms);
-		CollisionsChecks(snakeTransforms);
+		bool collision = CollisionsChecks(snakeTransforms);
+		if (collision) {
+			std::cout << "Game over" << std::endl;
+		}
 		SDL_Delay(75);
 	}
 	//TODO : free space texture and surface for font / UI text
