@@ -1,11 +1,13 @@
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <iostream>
 #include <vector>
+#include <string>
 #pragma region Variables
 const int SCREENWIDTH = 1920;
 const int SCREENHEIGHT = 1080;
-const char* IMAGE_PATH = "./Images/";
+const char* IMAGE_PATH = "./images/";
 const int SNAKEPARTSIZE = 48;
 struct Transform {
 	int x;
@@ -51,6 +53,7 @@ SDL_Texture* fruitTexture = nullptr;
 //Game
 bool running = true;
 int score = 0;
+TTF_Font* roboto;
 enum Direction
 {
 	STOP,
@@ -87,13 +90,26 @@ void DrawBorder(SDL_Renderer* renderer) {
 		SDL_RenderFillRect(renderer, &rectangle2);
 	}
 }
+void DrawText(SDL_Renderer* renderer, TTF_Font* font) {
+
+	if (!font) {
+		std::cout << "Font : " << font << "not loaded" << std::endl;
+	}
+	SDL_Color white = { 255,255,255 };
+	std::string str = "Score : " + std::to_string(score);
+	SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, str.c_str(), white);
+	SDL_Texture* message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+	SDL_Rect messageRect{ 1520,0,375,125 };
+	SDL_RenderCopy(renderer, message, NULL, &messageRect);
+}
 void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_Rect& fruitRect) {
 	int indexTail = snakeTransforms.size() - 1;
+
 	//Background
 	SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
 	SDL_RenderClear(renderer);
 	DrawBorder(renderer);
-
+	DrawText(renderer, roboto);
 
 
 	//Fruit
@@ -146,7 +162,7 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 	int offsetStart = boundaries.xStart + 35;
 	switch (direction) {
 	case RIGHT:
-		if (snakeRects[0].x <= boundaries.xEnd - offsetEnd){
+		if (snakeRects[0].x <= boundaries.xEnd - offsetEnd) {
 			snakeTranforms[0].x += SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = -90;
 			snakeRects[0].x += SNAKEPARTSIZE;
@@ -197,7 +213,7 @@ int GetRandom(int min_value, int max_value, int step)
 }
 
 void FruitUpdate(SDL_Rect& fruitRectangle, Transform& fruitPosition) {
-	int xPosition = GetRandom(boundaries.xStart + SNAKEPARTSIZE, boundaries.xEnd-SNAKEPARTSIZE, SNAKEPARTSIZE);
+	int xPosition = GetRandom(boundaries.xStart + SNAKEPARTSIZE, boundaries.xEnd - SNAKEPARTSIZE, SNAKEPARTSIZE);
 	int yPosition = GetRandom(boundaries.yStart + SNAKEPARTSIZE, boundaries.yEnd - SNAKEPARTSIZE, SNAKEPARTSIZE);
 	fruitRectangle.x = xPosition;
 	fruitRectangle.y = yPosition;
@@ -247,6 +263,7 @@ int main(int argc, char* args[]) {
 	//Init
 	SDL_Init(SDL_INIT_EVERYTHING);
 	IMG_Init(IMG_INIT_PNG);
+	TTF_Init();
 
 	//Initialize window and renderer
 	SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, 0, &window, &renderer);
@@ -260,6 +277,8 @@ int main(int argc, char* args[]) {
 	snakeBodyTexture = SDL_CreateTextureFromSurface(renderer, snakeBody);
 	snakeTailTexture = SDL_CreateTextureFromSurface(renderer, snakeTail);
 	fruitTexture = SDL_CreateTextureFromSurface(renderer, apple);
+	roboto = TTF_OpenFont("./font/Roboto-Black.ttf", 120);
+
 
 	while (running) {
 
@@ -268,7 +287,7 @@ int main(int argc, char* args[]) {
 		if (TransformEqual(fruitPosition, snakeTransforms[0], 40)) {
 			FruitUpdate(fruitRects, fruitPosition);
 			AddSnakeBody(snakeRects, snakeTransforms);
-			AddScore(score);	
+			AddScore(score);
 		}
 
 		//Logic
@@ -276,6 +295,8 @@ int main(int argc, char* args[]) {
 		MoveSnake(snakeRects, snakeTransforms);
 		SDL_Delay(75);
 	}
+	//TODO : free space texture and surface for font / UI text
+	TTF_Quit();
 	SDL_FreeSurface(snakeHead);
 	SDL_FreeSurface(apple);
 	SDL_DestroyTexture(snakeHeadTexture);
