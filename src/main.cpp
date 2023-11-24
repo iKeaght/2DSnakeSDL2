@@ -50,7 +50,7 @@ SDL_Texture* fruitTexture = nullptr;
 
 //Game
 bool running = true;
-
+int score = 0;
 enum Direction
 {
 	STOP,
@@ -204,6 +204,9 @@ void FruitUpdate(SDL_Rect& fruitRectangle, Transform& fruitPosition) {
 	fruitPosition.x = xPosition;
 	fruitPosition.y = yPosition;
 }
+void AddScore(int& score) {
+	score += 1;
+}
 void AddSnakeBody(std::vector<SDL_Rect>& snakeRectangles, std::vector<Transform>& snakeTransforms) {
 	Transform newTransform{ snakeHeadTransform.x + SNAKEPARTSIZE , snakeHeadTransform.y, 90 };
 	snakeTransforms.push_back(newTransform);
@@ -265,13 +268,12 @@ int main(int argc, char* args[]) {
 		if (TransformEqual(fruitPosition, snakeTransforms[0], 40)) {
 			FruitUpdate(fruitRects, fruitPosition);
 			AddSnakeBody(snakeRects, snakeTransforms);
-			//ADD SCORE
+			AddScore(score);	
 		}
 
 		//Logic
 		HandleInputs(e);
 		MoveSnake(snakeRects, snakeTransforms);
-
 		SDL_Delay(75);
 	}
 	SDL_FreeSurface(snakeHead);
