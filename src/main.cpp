@@ -99,7 +99,7 @@ void DrawText(SDL_Renderer* renderer, TTF_Font* font) {
 	std::string str = "Score : " + std::to_string(score);
 	SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, str.c_str(), white);
 	SDL_Texture* message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-	SDL_Rect messageRect{ 1520,0,375,125 };
+	SDL_Rect messageRect{ 1520,30,375,125 };
 	SDL_RenderCopy(renderer, message, NULL, &messageRect);
 }
 void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_Rect& fruitRect) {
@@ -126,6 +126,21 @@ void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_
 	SDL_RenderPresent(renderer);
 }
 
+bool CollisionsChecks(std::vector<Transform> snakeTransforms) {
+	for (int i = 0; i < snakeTransforms.size(); i++) {
+		for (int j = i + 1; j < snakeTransforms.size() - i; j++) {
+			if (snakeTransforms[i].x == snakeTransforms[j].x && snakeTransforms[i].y == snakeTransforms[j].y) {
+				//hit
+				std::cout << "hit" << std::endl;
+				snakeTransforms.erase(snakeTransforms.begin());
+				return true;
+			}
+		}
+	}
+	//not hit
+	std::cout << "not hited" << std::endl;
+	return false;
+}
 void HandleInputs(SDL_Event& event) {
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
@@ -293,6 +308,7 @@ int main(int argc, char* args[]) {
 		//Logic
 		HandleInputs(e);
 		MoveSnake(snakeRects, snakeTransforms);
+		CollisionsChecks(snakeTransforms);
 		SDL_Delay(75);
 	}
 	//TODO : free space texture and surface for font / UI text
