@@ -14,6 +14,13 @@ struct Transform {
 	int y;
 	int rotation;
 };
+struct Vector2 {
+	union {
+		struct { int width, height; } size;
+		struct { int x, y; } position;
+	};
+};
+
 struct Boundaries {
 	int xStart = 48;
 	int yStart = 48;
@@ -51,8 +58,10 @@ SDL_Texture* fruitTexture = nullptr;
 
 //Game
 bool running = true;
+bool restart = false;
 int score = 0;
 TTF_Font* roboto;
+SDL_Color white = { 255, 255, 255 };
 enum Direction
 {
 	STOP,
@@ -68,7 +77,60 @@ Direction direction;
 #pragma endregion
 
 
-#pragma region Methods
+#pragma region Utility Methods
+int GetRandom(int min_value, int max_value, int step)
+{
+	//Include max value 
+	int max_included = max_value + step;
+	int random_value = (rand() % ((++max_included - min_value) / step)) * step + min_value;
+	return random_value;
+}
+
+bool TransformEqual(Transform& vector1, Transform Transform, int step) {
+	if ((vector1.x - step <= Transform.x && Transform.x <= vector1.x + step) && (vector1.y - step <= Transform.y && Transform.y <= vector1.y + step)) {
+		return true;
+	}
+	return false;
+}
+
+SDL_Surface* LoadImage(SDL_Surface* image, const char* imageName) {
+	char fullPath[30];
+	strcpy_s(fullPath, IMAGE_PATH);
+	strcat_s(fullPath, imageName);
+	image = IMG_Load(fullPath);
+	if (!image) {
+		std::cout << "Image : " << imageName << "not loaded" << std::endl;
+	}
+	return image;
+
+}
+
+void AddScore(int& score) {
+	score += 1;
+}
+
+void RotationToDirection(int rotation) {
+	switch (rotation)
+	{
+	case -90:
+		direction = RIGHT;
+		break;
+	case 0: 
+		direction = DOWN;
+		break;
+	case 90: 
+		direction = LEFT;
+		break;
+	case 180:
+		direction = UP;
+		break;
+	default:
+		break;
+	}
+}
+#pragma endregion
+
+#pragma region Draw Methods
 void DrawBorder(SDL_Renderer* renderer) {
 	SDL_Rect rectangle;
 	SDL_Rect rectangle2;
@@ -89,16 +151,14 @@ void DrawBorder(SDL_Renderer* renderer) {
 		SDL_RenderFillRect(renderer, &rectangle2);
 	}
 }
-void DrawText(SDL_Renderer* renderer, TTF_Font* font) {
+void DrawText(SDL_Renderer* renderer,std::string str,  TTF_Font* font, SDL_Color color, Vector2 textPosition, Vector2 textSize) {
 
 	if (!font) {
 		std::cout << "Font : " << font << "not loaded" << std::endl;
 	}
-	SDL_Color white = { 255,255,255 };
-	std::string str = "Score : " + std::to_string(score);
-	SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, str.c_str(), white);
+	SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, str.c_str(), color);
 	SDL_Texture* message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-	SDL_Rect messageRect{ 1520,30,375,125 };
+	SDL_Rect messageRect{ textPosition.position.x, textPosition.position.y ,textSize.size.width, textSize.size.height };
 	SDL_RenderCopy(renderer, message, NULL, &messageRect);
 }
 void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_Rect& fruitRect) {
@@ -108,7 +168,8 @@ void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_
 	SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
 	SDL_RenderClear(renderer);
 	DrawBorder(renderer);
-	DrawText(renderer, roboto);
+	std::string str = "Score : " + std::to_string(score);
+	DrawText(renderer, str, roboto,white, {1520, 30}, {375, 125});
 
 
 	//Fruit
@@ -125,31 +186,59 @@ void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_
 	SDL_RenderPresent(renderer);
 }
 
+void RenderRestartMenu(SDL_Renderer* renderer) {
+	SDL_SetRenderDrawColor(renderer, 80, 80, 80, 200);
+	SDL_RenderClear(renderer);
+	std::string str = "Press space to restart....";
+	Vector2 textSize = { 1080, 150 };
+	Vector2 textPosition = { SCREENWIDTH/2- textSize.size.width/2, SCREENHEIGHT/2 - textSize.size.height/2 };
+	DrawText(renderer, str, roboto, white, textPosition, textSize);
+	SDL_RenderPresent(renderer);
+}
+
+
+#pragma endregion
+
+#pragma region InGame Methods
 bool CollisionsChecks(std::vector<Transform> snakeTransforms) {
 
-	//Check snake collisions with itself
-	for (int i = 0; i < snakeTransforms.size(); i++) {
-		for (int j = i + 1; j < snakeTransforms.size() - i; j++) {
-			if (snakeTransforms[i].x == snakeTransforms[j].x && snakeTransforms[i].y == snakeTransforms[j].y) {
-				
-				snakeTransforms.erase(snakeTransforms.begin());
-				return true;
-			}
-		}
-	}
-	
+	////Check snake collisions with itself
+	//for (int i = 0; i < snakeTransforms.size(); i++) {
+	//	for (int j = i + 1; j < snakeTransforms.size() - i; j++) {
+	//		if (snakeTransforms[i].x == snakeTransforms[j].x && snakeTransforms[i].y == snakeTransforms[j].y) {
+	//			
+	//			snakeTransforms.erase(snakeTransforms.begin());
+	//			return true;
+	//		}
+	//	}
+	//}
+
 	//Check snake collisions with walls
-	if (snakeTransforms[0].x <= boundaries.xStart+20 || snakeTransforms[0].x >= boundaries.xEnd- 20 || snakeTransforms[0].y <= boundaries.yStart + 20 || snakeTransforms[0].y >= boundaries.yEnd - 20) {
+	if (snakeTransforms[0].x <= boundaries.xStart + 20 || snakeTransforms[0].x >= boundaries.xEnd - 20 || snakeTransforms[0].y <= boundaries.yStart + 20 || snakeTransforms[0].y >= boundaries.yEnd - 20) {
 		return true;
 	}
 	return false;
 }
+
+void Restart() {
+	//restart snake
+	snakeTransforms.resize(1);
+	snakeRects.resize(1);
+
+	int rot = GetRandom(-90, 180, 90);
+	RotationToDirection(rot);
+	snakeTransforms[0] = { GetRandom(96,  1392, SNAKEPARTSIZE), GetRandom(96,  912, SNAKEPARTSIZE), rot};
+	snakeRects[0] = { snakeTransforms[0].x, snakeTransforms[0].y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+
+	score = 0;
+	restart = false;
+}
+
 void HandleInputs(SDL_Event& event) {
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
-
 			running = false;
-
+			restart = false;
 		}
 		else if (event.type == SDL_KEYDOWN) {
 			switch (event.key.keysym.sym) {
@@ -165,9 +254,35 @@ void HandleInputs(SDL_Event& event) {
 			case SDLK_DOWN:
 				direction = DOWN;
 				break;
+			case SDLK_SPACE:
+				if (restart) {
+					restart = false;
+				}
+				break;
 			}
 
 		}
+	}
+}
+
+void HandleRestartInput(SDL_Event& event) {
+	while (SDL_PollEvent(&event)) {
+		if (event.type == SDL_QUIT) {
+			restart = false;
+			running = false;
+		}
+		else if (event.type == SDL_KEYDOWN) {
+			switch (event.key.keysym.sym) {
+			case SDLK_SPACE:
+				if (restart) {
+					Restart();
+
+				}
+				break;
+			}
+
+		}
+
 	}
 }
 
@@ -194,7 +309,7 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 		}
 		break;
 	case UP:
-		if (boundaries.yStart<= snakeRects[0].y) {
+		if (boundaries.yStart <= snakeRects[0].y) {
 			snakeTranforms[0].y -= SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 180;
 			snakeRects[0].y -= SNAKEPARTSIZE;
@@ -221,12 +336,6 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 
 }
 
-int GetRandom(int min_value, int max_value, int step)
-{
-	int random_value = (rand() % ((++max_value - min_value) / step)) * step + min_value;
-	return random_value;
-}
-
 void FruitUpdate(SDL_Rect& fruitRectangle, Transform& fruitPosition) {
 	int xPosition = GetRandom(boundaries.xStart + SNAKEPARTSIZE, boundaries.xEnd - SNAKEPARTSIZE, SNAKEPARTSIZE);
 	int yPosition = GetRandom(boundaries.yStart + SNAKEPARTSIZE, boundaries.yEnd - SNAKEPARTSIZE, SNAKEPARTSIZE);
@@ -235,9 +344,7 @@ void FruitUpdate(SDL_Rect& fruitRectangle, Transform& fruitPosition) {
 	fruitPosition.x = xPosition;
 	fruitPosition.y = yPosition;
 }
-void AddScore(int& score) {
-	score += 1;
-}
+
 void AddSnakeBody(std::vector<SDL_Rect>& snakeRectangles, std::vector<Transform>& snakeTransforms) {
 	Transform newTransform{ snakeHeadTransform.x + SNAKEPARTSIZE , snakeHeadTransform.y, 90 };
 	snakeTransforms.push_back(newTransform);
@@ -245,27 +352,7 @@ void AddSnakeBody(std::vector<SDL_Rect>& snakeRectangles, std::vector<Transform>
 	snakeRectangles.push_back(newRectangle);
 
 }
-
-bool TransformEqual(Transform& vector1, Transform Transform, int step) {
-	if ((vector1.x - step <= Transform.x && Transform.x <= vector1.x + step) && (vector1.y - step <= Transform.y && Transform.y <= vector1.y + step)) {
-		return true;
-	}
-	return false;
-}
-
-SDL_Surface* LoadImage(SDL_Surface* image, const char* imageName) {
-	char fullPath[30];
-	strcpy_s(fullPath, IMAGE_PATH);
-	strcat_s(fullPath, imageName);
-	image = IMG_Load(fullPath);
-	if (!image) {
-		std::cout << "Image : " << imageName << "not loaded" << std::endl;
-	}
-	return image;
-
-}
 #pragma endregion
-
 
 
 int main(int argc, char* args[]) {
@@ -296,24 +383,35 @@ int main(int argc, char* args[]) {
 
 
 	while (running) {
+		while (!restart) {
+			Render(renderer, snakeRects, fruitRects);
 
-		Render(renderer, snakeRects, fruitRects);
+			if (TransformEqual(fruitPosition, snakeTransforms[0], 40)) {
+				FruitUpdate(fruitRects, fruitPosition);
+				AddSnakeBody(snakeRects, snakeTransforms);
+				AddScore(score);
+			}
 
-		if (TransformEqual(fruitPosition, snakeTransforms[0], 40)) {
-			FruitUpdate(fruitRects, fruitPosition);
-			AddSnakeBody(snakeRects, snakeTransforms);
-			AddScore(score);
+			//Logic
+			HandleInputs(e);
+			MoveSnake(snakeRects, snakeTransforms);
+			bool collision = CollisionsChecks(snakeTransforms);
+			if (collision) {
+				std::cout << "Game over" << std::endl;
+				RenderRestartMenu(renderer);
+				restart = true;
+			}
+
+			while (restart && running) {
+				HandleRestartInput(e);
+			}
+			SDL_Delay(75);
+
 		}
 
-		//Logic
-		HandleInputs(e);
-		MoveSnake(snakeRects, snakeTransforms);
-		bool collision = CollisionsChecks(snakeTransforms);
-		if (collision) {
-			std::cout << "Game over" << std::endl;
-		}
-		SDL_Delay(75);
 	}
+
+	std::cout << "quit" << std::endl;
 	//TODO : free space texture and surface for font / UI text
 	TTF_Quit();
 	SDL_FreeSurface(snakeHead);
@@ -326,3 +424,5 @@ int main(int argc, char* args[]) {
 	SDL_Quit();
 	return 0;
 }
+
+
