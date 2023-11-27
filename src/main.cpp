@@ -1,13 +1,17 @@
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <SDL_ttf.h>
 #include <iostream>
 #include <vector>
 #include <string>
+
+
 #pragma region Variables
 const int SCREENWIDTH = 1920;
 const int SCREENHEIGHT = 1080;
 const char* IMAGE_PATH = "./images/";
+const char* SOUND_PATH = "./audio/";
 const int SNAKEPARTSIZE = 48;
 struct Transform {
 	int x;
@@ -61,7 +65,10 @@ bool running = true;
 bool restart = false;
 int score = 0;
 TTF_Font* roboto;
+Mix_Music* eatingSoundEffect;
+Mix_Music* restartSoundEffect;
 SDL_Color white = { 255, 255, 255 };
+
 enum Direction
 {
 	STOP,
@@ -103,6 +110,17 @@ SDL_Surface* LoadImage(SDL_Surface* image, const char* imageName) {
 	}
 	return image;
 
+}
+
+Mix_Music* LoadMix(Mix_Music* music, const char* mixName) {
+	char fullPath[30];
+	strcpy_s(fullPath, SOUND_PATH);
+	strcat_s(fullPath, mixName);
+	music = Mix_LoadMUS(fullPath);
+	if (!music) {
+		std::cout << "Music : " << mixName << "not loaded" << std::endl;
+	}
+	return music;
 }
 
 void AddScore(int& score) {
@@ -225,8 +243,8 @@ bool CollisionsChecks(std::vector<Transform> snakeTransforms) {
 void HandleInputs(SDL_Event& event) {
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
-			running = false;
 			restart = false;
+			running = false;
 		}
 		else if (event.type == SDL_KEYDOWN) {
 			switch (event.key.keysym.sym) {
@@ -331,7 +349,8 @@ void Restart() {
 
 	int rot = GetRandom(-90, 180, 90);
 	RotationToDirection(rot);
-	snakeTransforms[0] = { GetRandom(96,  1392, SNAKEPARTSIZE), GetRandom(96,  912, SNAKEPARTSIZE), rot };
+	//1248 and 720 are values to avoid spawning near borders.
+	snakeTransforms[0] = { GetRandom(192,  1248, SNAKEPARTSIZE), GetRandom(192,  720, SNAKEPARTSIZE), rot };
 	snakeRects[0] = { snakeTransforms[0].x, snakeTransforms[0].y, SNAKEPARTSIZE, SNAKEPARTSIZE };
 
 	score = 0;
@@ -371,12 +390,16 @@ int main(int argc, char* args[]) {
 	//Init
 	SDL_Init(SDL_INIT_EVERYTHING);
 	IMG_Init(IMG_INIT_PNG);
+	Mix_Init(MIX_INIT_MP3);
 	TTF_Init();
 
 	//Initialize window and renderer
 	SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, 0, &window, &renderer);
 
 	srand(time(0));
+	Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
+	Mix_VolumeMusic(10);
+
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
 	snakeBody = LoadImage(snakeBody, "SnakeBody.png");
 	snakeTail = LoadImage(snakeTail, "SnakeTail.png");
@@ -385,14 +408,18 @@ int main(int argc, char* args[]) {
 	snakeBodyTexture = SDL_CreateTextureFromSurface(renderer, snakeBody);
 	snakeTailTexture = SDL_CreateTextureFromSurface(renderer, snakeTail);
 	fruitTexture = SDL_CreateTextureFromSurface(renderer, apple);
+
+	eatingSoundEffect = LoadMix(eatingSoundEffect, "eatingSoundEffect.mp3");
+	restartSoundEffect = LoadMix(restartSoundEffect, "restart.mp3");
 	roboto = TTF_OpenFont("./font/Roboto-Black.ttf", 120);
 
-
 	while (running) {
-		while (!restart) {
+		while (!restart && running) {
 			Render(renderer, snakeRects, fruitRects);
 
 			if (TransformEqual(fruitPosition, snakeTransforms[0], 40)) {
+				
+				Mix_PlayMusic(eatingSoundEffect, 1);
 				FruitUpdate(fruitRects, fruitPosition);
 				AddSnakeBody(snakeRects, snakeTransforms);
 				AddScore(score);
@@ -403,14 +430,13 @@ int main(int argc, char* args[]) {
 			MoveSnake(snakeRects, snakeTransforms);
 			bool collision = CollisionsChecks(snakeTransforms);
 			if (collision) {
-				std::cout << "Game over" << std::endl;
+				Mix_PlayMusic(restartSoundEffect, 1);
 				RenderRestartMenu(renderer);
 				restart = true;
 			}
 
 			while (restart && running) {
 				HandleRestartInput(e);
-				std::cout << snakeRects.size() << std::endl;
 			}
 			SDL_Delay(75);
 
@@ -419,14 +445,17 @@ int main(int argc, char* args[]) {
 	}
 
 	//TODO : free space texture and surface for font / UI text
-	TTF_Quit();
+	Mix_FreeMusic(eatingSoundEffect);
+	Mix_FreeMusic(restartSoundEffect);
 	SDL_FreeSurface(snakeHead);
 	SDL_FreeSurface(apple);
 	SDL_DestroyTexture(snakeHeadTexture);
 	SDL_DestroyTexture(fruitTexture);
-	IMG_Quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
+	TTF_Quit();
+	Mix_Quit();
+	IMG_Quit();
 	SDL_Quit();
 	return 0;
 }
