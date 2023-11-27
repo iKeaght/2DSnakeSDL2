@@ -399,10 +399,24 @@ int main(int argc, char* args[]) {
 	SDL_Event e;
 
 	//Init
-	SDL_Init(SDL_INIT_EVERYTHING);
-	IMG_Init(IMG_INIT_PNG);
-	Mix_Init(MIX_INIT_MP3);
-	TTF_Init();
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+		std::cout << "Error with SDL_Init : " << SDL_GetError() << std::endl;
+		return -1;
+	};
+	
+	if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
+		std::cout << "Error with IMG_Init : " << IMG_GetError() << std::endl;
+		return -1;
+	};
+	if (Mix_Init(MIX_INIT_MP3) != MIX_INIT_MP3) {
+		std::cout << "Error with Mix_Init : " << Mix_GetError() << std::endl;
+		return -1;
+	};
+	if (TTF_Init() != 0) {
+		std::cout << "Error with TTF_Init : " << TTF_GetError() << std::endl;
+		return -1;
+	};
+	
 
 	//Initialize window and renderer
 	SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, 0, &window, &renderer);
