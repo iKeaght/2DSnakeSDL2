@@ -38,8 +38,8 @@ SDL_Rect snakeHeadRectangle = { snakeHeadTransform.x, snakeHeadTransform.y, SNAK
 SDL_Rect snakeBodyRectangle = { snakeBodyTransform.x, snakeBodyTransform.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
 SDL_Rect snakeTailectangle = { snakeTailTransform.x, snakeTailTransform.y, SNAKEPARTSIZE, SNAKEPARTSIZE };
 
-std::vector<SDL_Rect> snakeRects = { snakeHeadRectangle, snakeBodyRectangle, snakeTailectangle };
-std::vector<Transform> snakeTransforms = { snakeHeadTransform, snakeBodyTransform, snakeTailTransform };
+std::vector<SDL_Rect> snakeRects = { snakeHeadRectangle };
+std::vector<Transform> snakeTransforms = { snakeHeadTransform };
 
 
 SDL_Surface* snakeHead = nullptr;
@@ -115,10 +115,10 @@ void RotationToDirection(int rotation) {
 	case -90:
 		direction = RIGHT;
 		break;
-	case 0: 
+	case 0:
 		direction = DOWN;
 		break;
-	case 90: 
+	case 90:
 		direction = LEFT;
 		break;
 	case 180:
@@ -151,7 +151,7 @@ void DrawBorder(SDL_Renderer* renderer) {
 		SDL_RenderFillRect(renderer, &rectangle2);
 	}
 }
-void DrawText(SDL_Renderer* renderer,std::string str,  TTF_Font* font, SDL_Color color, Vector2 textPosition, Vector2 textSize) {
+void DrawText(SDL_Renderer* renderer, std::string str, TTF_Font* font, SDL_Color color, Vector2 textPosition, Vector2 textSize) {
 
 	if (!font) {
 		std::cout << "Font : " << font << "not loaded" << std::endl;
@@ -169,7 +169,7 @@ void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_
 	SDL_RenderClear(renderer);
 	DrawBorder(renderer);
 	std::string str = "Score : " + std::to_string(score);
-	DrawText(renderer, str, roboto,white, {1520, 30}, {375, 125});
+	DrawText(renderer, str, roboto, white, { 1520, 30 }, { 375, 125 });
 
 
 	//Fruit
@@ -180,7 +180,9 @@ void Render(SDL_Renderer* renderer, std::vector<SDL_Rect>& snakeRectangles, SDL_
 	for (int i = 1; i < snakeTransforms.size() - 1; i++) {
 		SDL_RenderCopyEx(renderer, snakeBodyTexture, NULL, &snakeRectangles[i], snakeTransforms[i].rotation, NULL, SDL_FLIP_NONE);
 	}
-	SDL_RenderCopyEx(renderer, snakeTailTexture, NULL, &snakeRectangles[indexTail], snakeTransforms[indexTail].rotation, NULL, SDL_FLIP_NONE);
+	if (snakeTransforms.size() > 1) {
+		SDL_RenderCopyEx(renderer, snakeTailTexture, NULL, &snakeRectangles[indexTail], snakeTransforms[indexTail].rotation, NULL, SDL_FLIP_NONE);
+	}
 
 
 	SDL_RenderPresent(renderer);
@@ -191,7 +193,7 @@ void RenderRestartMenu(SDL_Renderer* renderer) {
 	SDL_RenderClear(renderer);
 	std::string str = "Press space to restart....";
 	Vector2 textSize = { 1080, 150 };
-	Vector2 textPosition = { SCREENWIDTH/2- textSize.size.width/2, SCREENHEIGHT/2 - textSize.size.height/2 };
+	Vector2 textPosition = { SCREENWIDTH / 2 - textSize.size.width / 2, SCREENHEIGHT / 2 - textSize.size.height / 2 };
 	DrawText(renderer, str, roboto, white, textPosition, textSize);
 	SDL_RenderPresent(renderer);
 }
@@ -218,20 +220,6 @@ bool CollisionsChecks(std::vector<Transform> snakeTransforms) {
 		return true;
 	}
 	return false;
-}
-
-void Restart() {
-	//restart snake
-	snakeTransforms.resize(1);
-	snakeRects.resize(1);
-
-	int rot = GetRandom(-90, 180, 90);
-	RotationToDirection(rot);
-	snakeTransforms[0] = { GetRandom(96,  1392, SNAKEPARTSIZE), GetRandom(96,  912, SNAKEPARTSIZE), rot};
-	snakeRects[0] = { snakeTransforms[0].x, snakeTransforms[0].y, SNAKEPARTSIZE, SNAKEPARTSIZE };
-
-	score = 0;
-	restart = false;
 }
 
 void HandleInputs(SDL_Event& event) {
@@ -265,26 +253,6 @@ void HandleInputs(SDL_Event& event) {
 	}
 }
 
-void HandleRestartInput(SDL_Event& event) {
-	while (SDL_PollEvent(&event)) {
-		if (event.type == SDL_QUIT) {
-			restart = false;
-			running = false;
-		}
-		else if (event.type == SDL_KEYDOWN) {
-			switch (event.key.keysym.sym) {
-			case SDLK_SPACE:
-				if (restart) {
-					Restart();
-
-				}
-				break;
-			}
-
-		}
-
-	}
-}
 
 void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeTranforms) {
 
@@ -352,6 +320,44 @@ void AddSnakeBody(std::vector<SDL_Rect>& snakeRectangles, std::vector<Transform>
 	snakeRectangles.push_back(newRectangle);
 
 }
+
+void Restart() {
+
+	FruitUpdate(fruitRects, fruitPosition);
+
+	//restart snake
+	snakeTransforms.resize(1);
+	snakeRects.resize(1);
+
+	int rot = GetRandom(-90, 180, 90);
+	RotationToDirection(rot);
+	snakeTransforms[0] = { GetRandom(96,  1392, SNAKEPARTSIZE), GetRandom(96,  912, SNAKEPARTSIZE), rot };
+	snakeRects[0] = { snakeTransforms[0].x, snakeTransforms[0].y, SNAKEPARTSIZE, SNAKEPARTSIZE };
+
+	score = 0;
+	restart = false;
+}
+
+void HandleRestartInput(SDL_Event& event) {
+	while (SDL_PollEvent(&event)) {
+		if (event.type == SDL_QUIT) {
+			restart = false;
+			running = false;
+		}
+		else if (event.type == SDL_KEYDOWN) {
+			switch (event.key.keysym.sym) {
+			case SDLK_SPACE:
+				if (restart) {
+					Restart();
+
+				}
+				break;
+			}
+
+		}
+
+	}
+}
 #pragma endregion
 
 
@@ -404,6 +410,7 @@ int main(int argc, char* args[]) {
 
 			while (restart && running) {
 				HandleRestartInput(e);
+				std::cout << snakeRects.size() << std::endl;
 			}
 			SDL_Delay(75);
 
@@ -411,7 +418,6 @@ int main(int argc, char* args[]) {
 
 	}
 
-	std::cout << "quit" << std::endl;
 	//TODO : free space texture and surface for font / UI text
 	TTF_Quit();
 	SDL_FreeSurface(snakeHead);
