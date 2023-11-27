@@ -146,6 +146,7 @@ void RotationToDirection(int rotation) {
 		break;
 	}
 }
+
 #pragma endregion
 
 #pragma region Draw Methods
@@ -223,15 +224,16 @@ void RenderRestartMenu(SDL_Renderer* renderer) {
 bool CollisionsChecks(std::vector<Transform> snakeTransforms) {
 
 	////Check snake collisions with itself
-	//for (int i = 0; i < snakeTransforms.size(); i++) {
-	//	for (int j = i + 1; j < snakeTransforms.size() - i; j++) {
-	//		if (snakeTransforms[i].x == snakeTransforms[j].x && snakeTransforms[i].y == snakeTransforms[j].y) {
-	//			
-	//			snakeTransforms.erase(snakeTransforms.begin());
-	//			return true;
-	//		}
-	//	}
-	//}
+	for (int i = 0; i < snakeTransforms.size(); i++) {
+		for (int j = i + 1; j < snakeTransforms.size() - i; j++) {
+			if (snakeTransforms[i].x == snakeTransforms[j].x && snakeTransforms[i].y == snakeTransforms[j].y) {
+
+				//Optimisation 
+				snakeTransforms.erase(snakeTransforms.begin());
+				return true;
+			}
+		}
+	}
 
 	//Check snake collisions with walls
 	if (snakeTransforms[0].x <= boundaries.xStart + 20 || snakeTransforms[0].x >= boundaries.xEnd - 20 || snakeTransforms[0].y <= boundaries.yStart + 20 || snakeTransforms[0].y >= boundaries.yEnd - 20) {
@@ -249,17 +251,26 @@ void HandleInputs(SDL_Event& event) {
 		else if (event.type == SDL_KEYDOWN) {
 			switch (event.key.keysym.sym) {
 			case SDLK_RIGHT:
-				direction = RIGHT;
+				if (direction != LEFT) {
+					direction = RIGHT;
+				}
 				break;
 			case SDLK_LEFT:
-				direction = LEFT;
+				if (direction != RIGHT) {
+					direction = LEFT;
+				}
 				break;
 			case SDLK_UP:
-				direction = UP;
+				if (direction != DOWN) {
+					direction = UP;
+				}
 				break;
 			case SDLK_DOWN:
-				direction = DOWN;
+				if (direction != UP) {
+					direction = DOWN;
+				}
 				break;
+
 			case SDLK_SPACE:
 				if (restart) {
 					restart = false;
@@ -396,40 +407,43 @@ int main(int argc, char* args[]) {
 	//Initialize window and renderer
 	SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, 0, &window, &renderer);
 
+	//Global config
 	srand(time(0));
 	Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
 	Mix_VolumeMusic(10);
 
+	//Load Image, Sound and Font inside datastructures
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
 	snakeBody = LoadImage(snakeBody, "SnakeBody.png");
 	snakeTail = LoadImage(snakeTail, "SnakeTail.png");
 	apple = LoadImage(apple, "Apple.png");
+	eatingSoundEffect = LoadMix(eatingSoundEffect, "eatingSoundEffect.mp3");
+	restartSoundEffect = LoadMix(restartSoundEffect, "restart.mp3");
+	roboto = TTF_OpenFont("./font/Roboto-Black.ttf", 120);
+
+	//Load Textures
 	snakeHeadTexture = SDL_CreateTextureFromSurface(renderer, snakeHead);
 	snakeBodyTexture = SDL_CreateTextureFromSurface(renderer, snakeBody);
 	snakeTailTexture = SDL_CreateTextureFromSurface(renderer, snakeTail);
 	fruitTexture = SDL_CreateTextureFromSurface(renderer, apple);
 
-	eatingSoundEffect = LoadMix(eatingSoundEffect, "eatingSoundEffect.mp3");
-	restartSoundEffect = LoadMix(restartSoundEffect, "restart.mp3");
-	roboto = TTF_OpenFont("./font/Roboto-Black.ttf", 120);
 
 	while (running) {
 		while (!restart && running) {
 			Render(renderer, snakeRects, fruitRects);
 
 			if (TransformEqual(fruitPosition, snakeTransforms[0], 40)) {
-				
+
 				Mix_PlayMusic(eatingSoundEffect, 1);
 				FruitUpdate(fruitRects, fruitPosition);
 				AddSnakeBody(snakeRects, snakeTransforms);
 				AddScore(score);
 			}
 
-			//Logic
 			HandleInputs(e);
 			MoveSnake(snakeRects, snakeTransforms);
-			bool collision = CollisionsChecks(snakeTransforms);
-			if (collision) {
+
+			if (CollisionsChecks(snakeTransforms)) {
 				Mix_PlayMusic(restartSoundEffect, 1);
 				RenderRestartMenu(renderer);
 				restart = true;
@@ -438,18 +452,20 @@ int main(int argc, char* args[]) {
 			while (restart && running) {
 				HandleRestartInput(e);
 			}
-			SDL_Delay(75);
 
+			SDL_Delay(100);
 		}
-
 	}
-
 	//TODO : free space texture and surface for font / UI text
 	Mix_FreeMusic(eatingSoundEffect);
 	Mix_FreeMusic(restartSoundEffect);
 	SDL_FreeSurface(snakeHead);
+	SDL_FreeSurface(snakeBody);
+	SDL_FreeSurface(snakeTail);
 	SDL_FreeSurface(apple);
 	SDL_DestroyTexture(snakeHeadTexture);
+	SDL_DestroyTexture(snakeBodyTexture);
+	SDL_DestroyTexture(snakeTailTexture);
 	SDL_DestroyTexture(fruitTexture);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
