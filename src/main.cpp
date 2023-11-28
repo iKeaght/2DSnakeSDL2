@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <SDL.h>
 
 #pragma region Variables
 const int SCREENWIDTH = 1920;
