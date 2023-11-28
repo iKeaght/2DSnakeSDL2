@@ -6,7 +6,7 @@ After learning theory, I wanted to learn by praticing ! <br>
 
 
 # How to use 
-You can clone the repository or download the snake.zip file (it is windows only). <br>
+You can clone the repository and run it on any IDE or download the snake.zip file (it is windows only) and open the executable `2DSnakeSDL2.exe` file. <br>
 I only built and ran it on Windows 10, but SDL2 is multiplatform, so you should be able to get it to build on anything so long as you understand your local OS's build system.
 
 # Snake game
@@ -22,7 +22,7 @@ Take care of your body and walls, or you'll die.
 - I considered that all the code could be done in the `main.cpp` file which, in a more complicated game, would be a bad idea, but for something simple breaking everything apart would make it harder to understand.
 - You can find it in the `src` folder.
 - All the resources used are located inside `Resources` folder.
-- You can find an executable in `bin/x64/Debug/2DSnakeSDL2.exe` or in the `Snake.zip` folder.
+- You can find an executable in `bin/x64/Debug/2DSnakeSDL2.exe` and `bin/x64/Release/2DSnakeSDL2.exe` or in the `Snake.zip` folder.
 
 ## Librairies used
 I have used the following librairies : 
