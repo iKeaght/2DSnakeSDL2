@@ -6,12 +6,11 @@
 #include <vector>
 #include <string>
 
-
 #pragma region Variables
 const int SCREENWIDTH = 1920;
 const int SCREENHEIGHT = 1080;
-const char* IMAGE_PATH = "./images/";
-const char* SOUND_PATH = "./audio/";
+const char* IMAGE_PATH = "./Resources/images/";
+const char* SOUND_PATH = "./Resources/audio/";
 const int SNAKEPARTSIZE = 48;
 struct Transform {
 	int x;
@@ -101,19 +100,19 @@ bool TransformEqual(Transform& vector1, Transform Transform, int step) {
 }
 
 SDL_Surface* LoadImage(SDL_Surface* image, const char* imageName) {
-	char fullPath[30];
+	char fullPath[100];
 	strcpy_s(fullPath, IMAGE_PATH);
 	strcat_s(fullPath, imageName);
 	image = IMG_Load(fullPath);
 	if (!image) {
-		std::cout << "Image : " << imageName << "not loaded" << std::endl;
+		std::cout << "Image : " << imageName << " not loaded" << std::endl;
 	}
 	return image;
 
 }
 
 Mix_Music* LoadMix(Mix_Music* music, const char* mixName) {
-	char fullPath[30];
+	char fullPath[100];
 	strcpy_s(fullPath, SOUND_PATH);
 	strcat_s(fullPath, mixName);
 	music = Mix_LoadMUS(fullPath);
@@ -305,7 +304,7 @@ void MoveSnake(std::vector<SDL_Rect>& snakeRects, std::vector<Transform>& snakeT
 			snakeRects[0].x -= SNAKEPARTSIZE;
 		}
 		break;
-	case UP:
+	case UP: 
 		if (boundaries.yStart <= snakeRects[0].y) {
 			snakeTranforms[0].y -= SNAKEPARTSIZE;
 			snakeTranforms[0].rotation = 180;
@@ -393,7 +392,7 @@ void HandleRestartInput(SDL_Event& event) {
 
 int main(int argc, char* args[]) {
 
-
+	
 	SDL_Window* window = nullptr;
 	SDL_Renderer* renderer = nullptr;
 	SDL_Event e;
@@ -420,7 +419,7 @@ int main(int argc, char* args[]) {
 
 	//Initialize window and renderer
 	SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, 0, &window, &renderer);
-
+	SDL_SetWindowTitle(window, "Snake");
 	//Global config
 	srand(time(0));
 	Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
@@ -428,12 +427,13 @@ int main(int argc, char* args[]) {
 
 	//Load Image, Sound and Font inside datastructures
 	snakeHead = LoadImage(snakeHead, "SnakeHead.png");
+	SDL_SetWindowIcon(window, snakeHead);
 	snakeBody = LoadImage(snakeBody, "SnakeBody.png");
 	snakeTail = LoadImage(snakeTail, "SnakeTail.png");
 	apple = LoadImage(apple, "Apple.png");
 	eatingSoundEffect = LoadMix(eatingSoundEffect, "eatingSoundEffect.mp3");
 	restartSoundEffect = LoadMix(restartSoundEffect, "restart.mp3");
-	roboto = TTF_OpenFont("./font/Roboto-Black.ttf", 120);
+	roboto = TTF_OpenFont("./Resources/font/Roboto-Black.ttf", 120);
 
 	//Load Textures
 	snakeHeadTexture = SDL_CreateTextureFromSurface(renderer, snakeHead);
@@ -470,7 +470,6 @@ int main(int argc, char* args[]) {
 			SDL_Delay(100);
 		}
 	}
-	//TODO : free space texture and surface for font / UI text
 	Mix_FreeMusic(eatingSoundEffect);
 	Mix_FreeMusic(restartSoundEffect);
 	SDL_FreeSurface(snakeHead);

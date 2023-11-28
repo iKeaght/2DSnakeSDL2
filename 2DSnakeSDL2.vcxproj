@@ -71,8 +71,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\C++ Librairies\SDL2_mixer-devel-2.6.3-VC\SDL2_mixer-2.6.3\include;D:\C++ Librairies\SDL2_ttf\SDL2_ttf-2.20.2\include;D:\C++ Librairies\SDL2_image-devel-2.6.3-VC\SDL2_image-2.6.3\include;D:\C++ Librairies\SDL2VC\SDL2-2.28.5\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\C++\2DSnakeSDL2\src\font;D:\C++\2DSnakeSDL2\src\audio;D:\C++\2DSnakeSDL2\src\images;D:\C++ Librairies\SDL2_mixer-devel-2.6.3-VC\SDL2_mixer-2.6.3\include;D:\C++ Librairies\SDL2_ttf\SDL2_ttf-2.20.2\include;D:\C++ Librairies\SDL2_image-devel-2.6.3-VC\SDL2_image-2.6.3\include;D:\C++ Librairies\SDL2VC\SDL2-2.28.5\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\C++ Librairies\SDL2_mixer-devel-2.6.3-VC\SDL2_mixer-2.6.3\lib\x64;D:\C++ Librairies\SDL2_ttf\SDL2_ttf-2.20.2\lib\x64;D:\C++ Librairies\SDL2_image-devel-2.6.3-VC\SDL2_image-2.6.3\lib\x64;D:\C++ Librairies\SDL2VC\SDL2-2.28.5\lib\x64;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\intermediates\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\intermediates\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>D:\C++\2DSnakeSDL2\src\font;D:\C++\2DSnakeSDL2\src\audio;D:\C++\2DSnakeSDL2\src\images;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\intermediates\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\intermediates\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -106,11 +121,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;MYMACRO=R"($(ProjectDir))";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;SDL2_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -133,6 +148,28 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="images\Apple.png" />
+    <Image Include="images\SnakeBody.png" />
+    <Image Include="images\SnakeHead.png" />
+    <Image Include="images\SnakeTail.png" />
+    <Image Include="src\images\Apple.png" />
+    <Image Include="src\images\SnakeBody.png" />
+    <Image Include="src\images\SnakeHead.png" />
+    <Image Include="src\images\SnakeTail.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="font\Roboto-Black.ttf" />
+    <Font Include="src\font\Roboto-Black.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="audio\backgroundMusic.mp3" />
+    <Media Include="audio\eatingSoundEffect.mp3" />
+    <Media Include="audio\restart.mp3" />
+    <Media Include="src\audio\backgroundMusic.mp3" />
+    <Media Include="src\audio\eatingSoundEffect.mp3" />
+    <Media Include="src\audio\restart.mp3" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

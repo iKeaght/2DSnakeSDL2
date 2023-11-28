@@ -19,4 +19,42 @@
       <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="images\Apple.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="images\SnakeBody.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="images\SnakeHead.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="images\SnakeTail.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="src\images\Apple.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="src\images\SnakeBody.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="src\images\SnakeHead.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="src\images\SnakeTail.png">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="font\Roboto-Black.ttf" />
+    <Font Include="src\font\Roboto-Black.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="audio\restart.mp3" />
+    <Media Include="audio\eatingSoundEffect.mp3" />
+    <Media Include="audio\backgroundMusic.mp3" />
+    <Media Include="src\audio\backgroundMusic.mp3" />
+    <Media Include="src\audio\eatingSoundEffect.mp3" />
+    <Media Include="src\audio\restart.mp3" />
+  </ItemGroup>
 </Project>
